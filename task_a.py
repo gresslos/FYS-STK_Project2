@@ -122,10 +122,12 @@ def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
     m = int(m)
     beta = np.copy(beta0)
 
-    frac_t0_t1 = eta0
+    
     # t0 / t1 = eta_best from GD
-    t0 = 10
-    t1 =  frac_t0_t1 * t0
+    # PS: chose t1 = 10 -> will give t0
+    # Impact scaling: t compared to t1
+    t1 = 50
+    t0 =  eta0 * t1
     def time_decay_eta(t):
         return t0/(t+t1)
         
@@ -403,14 +405,14 @@ if __name__ == "__main__": # ---------------------------------------------------
     x = 2*np.random.rand(n,1)
     y = 4+3*x+np.random.randn(n,1)"""
 
-    want_OLS     = True
-    want_GD      = True
+    want_OLS     = False
+    want_GD      = False
     want_momGD   = False
-    want_SGD     = False
+    want_SGD     = True
     want_SGD_skl = False
-    want_Adagrad = False    
-    want_RMSprop = False   
-    want_Adam    = False   
+    want_Adagrad = True    
+    want_RMSprop = True   
+    want_Adam    = True   
 
     # Note-----------------------
     # Adagrad with GD, momGD, SGD
@@ -448,14 +450,19 @@ if __name__ == "__main__": # ---------------------------------------------------
 
     eta_list = np.linspace(0, .3, 7)   
     eta_list = eta_list[1:] # remove eta = 0
+
+    eta_list2 = np.linspace(0,0.1, 11)
+    eta_list2 = eta_list2[1:]
     
     lmb_list = np.logspace(-5, 0, 6) 
     lmb_list[0] = 0 # This give OLS case (not L2-penalty)
     # lmb = 0 -> plain OLS
     # lmb > 0 -> L2 - penalty (Ridge)
 
-    m_list = np.linspace(1, 3, 3)
-    n_epochs_list = np.linspace(35, 100, 6)
+    m_list = np.linspace(10, 100, 10)
+    #m_list = np.linspace(10, 100, 20)
+
+    n_epochs_list = np.linspace(10, 100, 10)
     
     
 
@@ -499,14 +506,22 @@ if __name__ == "__main__": # ---------------------------------------------------
         # Use best eta and lambda from GD- and momGD-analysis
         # best lambda = 0 -> OLS, no L2-penalty
         # best eta = eta0_SGD in parameter above
-        mom_SGD_bool = True # change if want (True) or not want (False) momentum
+        mom_SGD_bool = False # change if want (True) or not want (False) momentum
 
-        y_SGD = np.zeros( (len(m_list), len(n_epochs_list), len(y), 1) )
+        """y_SGD = np.zeros( (len(m_list), len(n_epochs_list), len(y), 1) )
         
         for i in range(len(m_list)):
             for j in range(len(n_epochs_list)):
                 y_SGD[i,j,:], n_epochs_SGD = SGD(X, y, beta0, n_epochs=n_epochs_list[j], m=m_list[i], tol=tol, eta0=eta_best, delta_mom=delta_mom,  momentum=mom_SGD_bool)
+                y_SGD[i,j,:] = scaler.rescale(y_SGD[i,j])"""
+        
+        y_SGD = np.zeros( (len(m_list), len(eta_list2), len(y), 1) )
+        
+        for i in range(len(m_list)):
+            for j in range(len(eta_list2)):
+                y_SGD[i,j,:], n_epochs_SGD = SGD(X, y, beta0, n_epochs=Niter, m=m_list[i], tol=tol, eta0=eta_list2[j], delta_mom=delta_mom,  momentum=mom_SGD_bool)
                 y_SGD[i,j,:] = scaler.rescale(y_SGD[i,j])
+        
 
     if want_SGD_skl:
         n_epochs_SGD_skl = 10
@@ -520,11 +535,12 @@ if __name__ == "__main__": # ---------------------------------------------------
 
         if SGD_Ada_bool:
             m_Ada_list = np.linspace(1,65,17)
-            y_Ada = np.zeros( (len(m_Ada_list), len(eta_list), len(y), 1) )
+            m_Ada_list = m_list
+            y_Ada = np.zeros( (len(m_Ada_list), len(eta_list2), len(y), 1) )
         
             for i in range(len(m_Ada_list)):
-                for j in range(len(eta_list)):
-                    y_Ada[i,j,:], n_epochs_Ada = Adagrad(X,y,beta0,Niter,n_epochs_best,eta_list[j],m_Ada_list[i],tol,delta_mom, mom_Ada_bool, SGD_Ada_bool)
+                for j in range(len(eta_list2)):
+                    y_Ada[i,j,:], n_epochs_Ada = Adagrad(X,y,beta0,Niter,n_epochs_best,eta_list2[j],m_Ada_list[i],tol,delta_mom, mom_Ada_bool, SGD_Ada_bool)
                     y_Ada[i,j,:] = scaler.rescale(y_Ada[i,j])
         else:
             y_Ada, Niter_Ada = Adagrad(X,y,beta0,Niter,n_epochs_best,eta_best,m_best,tol,delta_mom, mom_Ada_bool, SGD_Ada_bool)
@@ -532,20 +548,22 @@ if __name__ == "__main__": # ---------------------------------------------------
     
     if want_RMSprop:
         m_RMS_list = np.linspace(1,65,17)
-        y_RMS = np.zeros( (len(m_RMS_list), len(eta_list), len(y), 1) )
+        m_RMS_list = m_list
+        y_RMS = np.zeros( (len(m_RMS_list), len(eta_list2), len(y), 1) )
         
         for i in range(len(m_RMS_list)):
-            for j in range(len(eta_list)):
-                y_RMS[i,j,:], n_epochs_RMS = RMSprop(X,y,beta0,n_epochs_best,eta_list[j],m_RMS_list[i])
+            for j in range(len(eta_list2)):
+                y_RMS[i,j,:], n_epochs_RMS = RMSprop(X,y,beta0,n_epochs_best,eta_list2[j],m_RMS_list[i])
                 y_RMS[i,j,:] = scaler.rescale(y_RMS[i,j])
     
     if want_Adam:
         m_A_list = np.linspace(1,65,17)
-        y_A = np.zeros( (len(m_A_list), len(eta_list), len(y), 1) )
+        m_A_list = m_list
+        y_A = np.zeros( (len(m_A_list), len(eta_list2), len(y), 1) )
         
         for i in range(len(m_A_list)):
-            for j in range(len(eta_list)):
-                y_A[i,j,:], n_epochs_A = Adam(X,y,beta0,n_epochs_best,eta_list[j],m_A_list[i])
+            for j in range(len(eta_list2)):
+                y_A[i,j,:], n_epochs_A = Adam(X,y,beta0,n_epochs_best,eta_list2[j],m_A_list[i])
                 y_A[i,j,:] = scaler.rescale(y_A[i,j])
 
 
@@ -580,7 +598,8 @@ if __name__ == "__main__": # ---------------------------------------------------
     if want_SGD:
         # Plot best fit from heatplot: m = 1, n_epochs = 48
         if mom_SGD_bool:
-            plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, n_epochs_list)
+            #plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, n_epochs_list)
+            plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, eta_list2)
             plot(x, y, y_SGD[0,1], "Momentum-SGD", eta=eta_best, n_epochs=n_epochs_best, m=m_best)
         else:
             plot_heatmap(y, y_SGD, "SGD", m_list, n_epochs_list)
@@ -591,7 +610,8 @@ if __name__ == "__main__": # ---------------------------------------------------
     
     if want_Adagrad:
         if SGD_Ada_bool:
-            plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list)
+            #plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list)
+            plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
             plot(x, y, y_Ada[11,0], "AdaGrad_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_Ada)
             # i = 11 -> m = 45
         elif mom_Ada_bool:
@@ -600,11 +620,13 @@ if __name__ == "__main__": # ---------------------------------------------------
             plot(x, y, y_Ada, "AdaGrad", Niter=Niter_Ada, eta=eta_best)
     
     if want_RMSprop:
-        plot_heatmap(y, y_RMS, "RMSprop_SGD", m_RMS_list, eta_list)
+        #plot_heatmap(y, y_RMS, "RMSprop_SGD", m_RMS_list, eta_list)
+        plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
         plot(x, y, y_RMS[12,0], "RMSprop_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_RMS)
         # i = 12 -> m = 49
     if want_Adam:
-        plot_heatmap(y, y_A, "Adam_SGD", m_A_list, eta_list)
+        #plot_heatmap(y, y_A, "Adam_SGD", m_A_list, eta_list)
+        plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
         plot(x, y, y_A[-2,0], "Adam_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_A)
         # i = -2 -> m = 61
 
