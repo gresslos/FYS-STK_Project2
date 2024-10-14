@@ -70,6 +70,10 @@ def OLS(X, y):
 def GD(X,y, beta0, Niter, tol, eta, lmb=0):
     beta = np.copy(beta0) # Copy to not change beta0 for nest Regression model
 
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
+
+
     diff = tol + 1
     iter = 0
 
@@ -77,21 +81,30 @@ def GD(X,y, beta0, Niter, tol, eta, lmb=0):
         new_change = eta * (grad_anl(y, X, beta) + 2 * lmb * beta)
         beta -= new_change
         # Will be plain OLS if lmb = 0
+
+        # Calculate MSE-value----------
+        y_pred_i = X @ beta
+        MSE_list[iter+1] = MSE(y,y_pred_i)
+        # ----------------------------
+
         iter += 1
         diff = np.linalg.norm(new_change)
 
     if iter == Niter:
-        iter = f"Did not convergence"
+        iter = -1 #f"Did not convergence"
 
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, iter
+    return y_pred, iter, MSE_list
 
 
 
 def momGD(X,y, beta0, Niter, tol, eta, delta_mom, lmb=0):
     beta = np.copy(beta0)
+
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
 
     change = 0.0
     
@@ -102,16 +115,21 @@ def momGD(X,y, beta0, Niter, tol, eta, delta_mom, lmb=0):
         beta -= new_change                                         # make change
         change = new_change                                        # save change
 
+        # Calculate MSE-value----------
+        y_pred_i = X @ beta
+        MSE_list[iter+1] = MSE(y,y_pred_i)
+        # ----------------------------
+
         iter += 1
         diff = np.linalg.norm(new_change)
 
     if iter == Niter:
-        iter = f"Did not convergence"
+        iter = -1 #f"Did not convergence"
 
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, iter
+    return y_pred, iter, MSE_list
 
 
 def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
@@ -121,6 +139,9 @@ def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
     n_epochs = int(n_epochs)
     m = int(m)
     beta = np.copy(beta0)
+
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
 
     
     # t0 / t1 = eta_best from GD
@@ -136,34 +157,57 @@ def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
     M = int(n/m) # size of minibatches
 
     change = 0.0
+    diff = tol + 1
+    iter = 0
     if momentum:
-        for epoch in range(n_epochs): 
+        while iter < n_epochs and tol < diff: #for epoch in range(n_epochs): 
             for i in range(m): 
                 # chose a minibatch ------------------
                 random_index = M*np.random.randint(m)
                 Xi = X[random_index:random_index+M]
                 yi = y[random_index:random_index+M]
 
-                eta = time_decay_eta(epoch*m+i)
+                eta = time_decay_eta(iter*m+i) #time_decay_eta(epoch*m+i)
                 new_change = eta * grad_anl(yi,Xi,beta) + delta_mom * change # add momentum
                 beta -= new_change                                           # make change
                 change = new_change                                          # save change
 
+            # Calculate MSE-value----------
+            y_pred_i = X @ beta
+            MSE_list[iter+1] = MSE(y,y_pred_i)
+            # ----------------------------
+
+            iter += 1
+            diff = np.linalg.norm(new_change)
+
     else:
-        for epoch in range(n_epochs): 
+        while iter < n_epochs and tol < diff: #for epoch in range(n_epochs): 
             for i in range(m): 
                 # chose a minibatch ------------------
                 random_index = M*np.random.randint(m)
                 Xi = X[random_index:random_index+M]
                 yi = y[random_index:random_index+M]
 
-                eta = time_decay_eta(epoch*m+i)
+                eta = time_decay_eta(iter*m+i) #time_decay_eta(epoch*m+i)
+                new_change = eta * grad_anl(yi,Xi,beta)  
+                beta -= new_change                                                                          
                 beta -= eta * grad_anl(yi, Xi, beta)
+            
+            # Calculate MSE-value----------
+            y_pred_i = X @ beta
+            MSE_list[iter+1] = MSE(y,y_pred_i)
+            # ----------------------------
+            
+            iter += 1
+            diff = np.linalg.norm(new_change)
+    
+    if iter == n_epochs:
+        iter = -1 
     
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, n_epochs
+    return y_pred, iter, MSE_list
 
 
 def sklearn_SGD(X, y, n_epochs, eta0):
@@ -185,15 +229,15 @@ def sklearn_SGD(X, y, n_epochs, eta0):
     # Make Prediction
     y_pred = SGD_reg.predict(x)
 
-    print("-------------SGD Regression (scikit-learn)-------------")
-    print("Beta = \n", SGD_reg.coef_)
-    print("Intercepts = ", SGD_reg.intercept_)
 
     return y_pred, n_epochs
 
 
-def Adagrad(X,y,beta0,Niter,n_epochs,eta,m,tol,delta_mom,mom_bool,SGD_bool):
+def Adagrad(X,y,beta0,Niter,eta,m,delta_mom,mom_bool,SGD_bool,tol):
     beta = np.copy(beta0)
+
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
 
     change = 0.0
     # AdaGrad parameter to avoid possible division by zero
@@ -201,7 +245,7 @@ def Adagrad(X,y,beta0,Niter,n_epochs,eta,m,tol,delta_mom,mom_bool,SGD_bool):
 
     # ----------------- SGD - parameters ---------------
     m = int(m)
-    n_epochs = int(n_epochs)
+    n_epochs = int(Niter)
     n = len(y) 
     M = int(n/m) # size of minibatches
     # -------------------------------------------------
@@ -213,9 +257,9 @@ def Adagrad(X,y,beta0,Niter,n_epochs,eta,m,tol,delta_mom,mom_bool,SGD_bool):
     Giter = 0
     new_change = 0
 
-    # Note: lambda = 0, only SGD with momentum (better then without)
+    # Note: lambda = 0 
     if SGD_bool:
-        for epoch in range(n_epochs):
+        while iter < n_epochs and tol < diff: #for epoch in range(n_epochs):
             Giter = 0.0
             for i in range(m):
                 random_index = M*np.random.randint(m)
@@ -227,6 +271,14 @@ def Adagrad(X,y,beta0,Niter,n_epochs,eta,m,tol,delta_mom,mom_bool,SGD_bool):
 
                 beta -= new_change
 
+            # Calculate MSE-value----------
+            y_pred_i = X @ beta
+            MSE_list[iter+1] = MSE(y,y_pred_i)
+            # ----------------------------
+
+            iter += 1
+            diff = np.linalg.norm(new_change)
+
     else: # GD or momGD with AdaGrad
         while iter < Niter and tol < diff:
             Giter += grad_anl(y,X,beta)**2
@@ -237,20 +289,31 @@ def Adagrad(X,y,beta0,Niter,n_epochs,eta,m,tol,delta_mom,mom_bool,SGD_bool):
                 change = new_change    
     
             beta -= new_change
+
+            # Calculate MSE-value----------
+            y_pred_i = X @ beta
+            MSE_list[iter+1] = MSE(y,y_pred_i)
+            # ----------------------------
+
             iter += 1
             diff = np.linalg.norm(new_change)
 
 
+
     if iter == Niter:
-        iter = f"Convergence demand not met"
+        iter = -1 #f"Convergence demand not met"
 
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, iter
+    return y_pred, iter, MSE_list
 
-def RMSprop(X,y,beta0,n_epochs,eta,m):
+def RMSprop(X,y,beta0,n_epochs,eta,m,tol):
     beta = np.copy(beta0)
+
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
+
 
     # Value for parameter rho
     rho = 0.99
@@ -262,7 +325,10 @@ def RMSprop(X,y,beta0,n_epochs,eta,m):
     n = len(y) 
     M = int(n/m) # size of minibatches
     # -------------------------------------------------
-    for epoch in range(n_epochs):
+
+    diff = tol + 1
+    iter = 0
+    while iter < n_epochs and tol < diff: #for epoch in range(n_epochs):
         Giter = 0.0
         for i in range(m):
             random_index = M*np.random.randint(m)
@@ -275,15 +341,30 @@ def RMSprop(X,y,beta0,n_epochs,eta,m):
             new_change = grad_anl(yi,Xi,beta) * eta / (delta + np.sqrt(Giter))
 
             beta -= new_change
+        
+        # Calculate MSE-value----------
+        y_pred_i = X @ beta
+        MSE_list[iter+1] = MSE(y,y_pred_i)
+        # ----------------------------
+
+        iter += 1
+        diff = np.linalg.norm(new_change)
+    
+    if iter == Niter:
+        iter = -1 
 
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, n_epochs
+    return y_pred, iter, MSE_list
 
 
-def Adam(X,y,beta0,n_epochs,eta,m):
+def Adam(X,y,beta0,n_epochs,eta,m,tol):
     beta = np.copy(beta0)
+
+    MSE_list = np.zeros(Niter+1)
+    MSE_list[0] = MSE(y, X @ beta)
+
 
     iter = 0
     # Value for parameters beta1 and beta2, see https://arxiv.org/abs/1412.6980
@@ -299,8 +380,10 @@ def Adam(X,y,beta0,n_epochs,eta,m):
     M = int(n/m) # size of minibatches
     # -------------------------------------------------
 
+    diff = tol + 1
+    iter = 0
     new_change = 0
-    for epoch in range(n_epochs):
+    while iter < n_epochs and tol < diff: #for epoch in range(n_epochs):
         first_moment = 0.0
         second_moment = 0.0
         iter += 1
@@ -317,10 +400,21 @@ def Adam(X,y,beta0,n_epochs,eta,m):
             new_change = eta * first_term / (np.sqrt(second_term) + delta)
             beta -= new_change
 
+        # Calculate MSE-value----------
+        y_pred_i = X @ beta
+        MSE_list[iter] = MSE(y,y_pred_i)
+        # ----------------------------
+
+        #iter += 1
+        diff = np.linalg.norm(new_change)
+    
+    if iter == Niter:
+        iter = -1 
+
     # Make Prediction
     y_pred = X @ beta
 
-    return y_pred, n_epochs
+    return y_pred, iter, MSE_list
 
 
 
@@ -339,11 +433,15 @@ def plot(x, y, y_pred, title, lmd=0, Niter=0, eta=0, n_epochs=0, m=0):
         if title == "OLS":
             ax.set_title("")
         else:
-            ax.set_title(f'Niter = {Niter}, lmd = {lmd}, eta = {eta}', fontsize = lablesize)
-    elif title == "SGD_Scikit_Learn":
-        ax.set_title(f'n_epochs = {n_epochs}, m = {m}\nlmd = {lmd}, eta = {eta}', fontsize = lablesize)
+            if Niter == -1: #if convegence criteria was not reached
+                ax.set_title(f'Niter = Did not convergence, lmd = {lmd}, eta = {eta}', fontsize = lablesize)
+            else:
+                ax.set_title(f'Niter = {Niter}, lmd = {lmd}, eta = {eta}', fontsize = lablesize)
     else: # our SGD-code
-        ax.set_title(f'n_epochs = {n_epochs}, m = {m}\nlmd = {lmd}, eta0 = {eta}', fontsize = lablesize)
+        if n_epochs == -1: #if convegence criteria was not reached
+            ax.set_title(f'n_epochs = Did not convergence, m = {m}\nlmd = {lmd}, eta0 = {eta}', fontsize = lablesize)
+        else:
+            ax.set_title(f'n_epochs = {n_epochs}, m = {m}\nlmd = {lmd}, eta0 = {eta}', fontsize = lablesize)
 
 
 
@@ -376,19 +474,30 @@ def plot_heatmap(y, y_pred, title, var1, var2):
     sns.heatmap(MSE_list, annot=True, cmap="coolwarm", xticklabels=var2, yticklabels=var1)
 
     # Set original labels and title
-    if "SGD" not in title:
-        plt.xlabel(r"Learning Rate [$\eta$]", fontsize = lablesize)
-        plt.ylabel(r"L2-penalty [$\lambda$]", fontsize = lablesize)
-    elif title == "AdaGrad_SGD" or title == "RMSprop_SGD" or title == "Adam_SGD":
-        plt.xlabel(r"Learning Rate [$\eta$]", fontsize = lablesize)
-        plt.ylabel(r"Number of minibatches, m []", fontsize = lablesize)
+    if title == "GD" or title == "Momentum-GD":
+        plt.xlabel(r"Learning Rate, $\eta$ []", fontsize = lablesize)
+        plt.ylabel(r"L2-penalty, $\lambda$ []", fontsize = lablesize)
     else:
-        plt.xlabel(r"Number of epochs []", fontsize = lablesize)
+        plt.xlabel(r"Learning Rate, $\eta$ []", fontsize = lablesize)
         plt.ylabel(r"Number of minibatches, m []", fontsize = lablesize)
 
     plt.title(f"Heatmap of MSE values for {title}\n ", fontsize=fontsize)
     plt.tight_layout()
     plt.savefig("Additional_Plots/" + title + "_heatmap.png")
+
+
+    # ------------------- Find idex for lowest MSE --------------
+    min_val = np.min(MSE_list)
+    for i in range(len(MSE_list[:,0])):
+        for j in range(len(MSE_list[0,:])):
+            if MSE_list[i,j] == min_val:
+                i_min, j_min = i, j
+    
+    return i_min, j_min
+
+
+
+
 
 
 
@@ -397,21 +506,25 @@ def plot_heatmap(y, y_pred, title, var1, var2):
     
 
 if __name__ == "__main__": # ----------------------------------------------------------------------------------------
-    n = 100 + 900
+    n = 1000
     x = 2*np.random.rand(n,1)
-    y = 2 + x + 2*x**2 + np.random.randn(n,1)
+    y = 2 + x + 3*x**2 - 2*x**3 + 0.1*np.random.randn(n,1)
 
-    """n = 100
-    x = 2*np.random.rand(n,1)
-    y = 4+3*x+np.random.randn(n,1)"""
 
-    want_OLS     = False
-    want_GD      = False
-    want_momGD   = False
+    want_OLS     = True
+    want_GD      = True
+    want_momGD   = True
     want_SGD     = True
-    want_SGD_skl = False
+    # --- SGD --------
+    mom_SGD_bool = True   # if want (True) or not want (False) momentum
+    # ----------------
+    want_SGD_skl = True
     want_Adagrad = True    
-    want_RMSprop = True   
+    # --- Adagrad ----
+    SGD_Ada_bool = True   # if want AdaGrad with SGD with momentum
+    mom_Ada_bool = False  # if want momentum to AdaGrad with plain GD (works if SGD_Ada_bool = False)
+    # ---------------
+    want_RMSprop = True  
     want_Adam    = True   
 
     # Note-----------------------
@@ -421,7 +534,7 @@ if __name__ == "__main__": # ---------------------------------------------------
     # ---------------------------
 
     # Creating Design Matrix
-    X = np.c_[x, x**2] # No Intecept given Scaling-process
+    X = np.c_[x, x**2, x**3] # No Intecept given Scaling-process
 
     # Scale values
     scaler = Scaler() # Create a scaler instance
@@ -436,7 +549,8 @@ if __name__ == "__main__": # ---------------------------------------------------
 
 
     #---------------------Optimal eta ? -------------------------------
-    #------------------- Will take too long time for NN Morten said----
+    #------------------- Will take too long time for NN ---------------
+    # ------------------ This code is before NN-code ------------------
     #H = (2.0/n) * X.T @ X # Hessian Matrix 
     #EigValues, EigVectors = np.linalg.eig(H)
     # print(f"Eigenvalues of Hessian Matrix:{EigValues}")
@@ -446,9 +560,9 @@ if __name__ == "__main__": # ---------------------------------------------------
 
     # -------------------- Parameters ---------------------
     Niter = 100
-    tol   = 1e-5
+    tol   = 1e-4
 
-    eta_list = np.linspace(0, .3, 7)   
+    eta_list = np.linspace(0, .3, 11)   
     eta_list = eta_list[1:] # remove eta = 0
 
     eta_list2 = np.linspace(0,0.1, 11)
@@ -468,9 +582,7 @@ if __name__ == "__main__": # ---------------------------------------------------
 
     # ----------------- Best values obtain from heatmaps -----------
     eta_best = 0.3      # obtain from GD and momGD analysis
-    eta_best_Ada = 0.05 # from SGD_Adagrad (and for RMSprop & Adam
-    lambda_best = 0     # obtain from GD and momGD analysis
-    delta_mom = 0.2     # testing heatmap result in delta_mom in [.2, .4] good
+    delta_mom = 0.2     # testing heatmap result in delta_mom in range [.2, .4] us good
     m_best = 1          # from SGD
     m_best_Ada = 45     # from SGD_AdaGrad
     m_best_RMS = 49     # from SGD_RMSprop
@@ -478,8 +590,8 @@ if __name__ == "__main__": # ---------------------------------------------------
     n_epochs_best = 48  # from SGD
 
     # PS: random_index changes for AdaGrad, RMSprop and Adam if they
-    # PS: are run together. Our best values is obtained for these 
-    # PS: functions run together
+    # PS: are run together. Our best values (seen in plots) is obtained 
+    # PS: when running all functions together
     # ---------------------------------------------------------------
 
     # Note: scaler.rescale(...) rescale data
@@ -488,82 +600,77 @@ if __name__ == "__main__": # ---------------------------------------------------
         y_OLS = scaler.rescale(y_OLS)
 
     if want_GD:
-        y_GD = np.zeros( (len(lmb_list), len(eta_list), len(y), 1) )
+        y_GD     = np.zeros( (len(lmb_list), len(eta_list), len(y), 1) )
+        Niter_GD = np.zeros( (len(lmb_list), len(eta_list)) )
+        MSE_GD   = np.zeros( (len(lmb_list), len(eta_list), Niter+1) ) 
         for i in range(len(lmb_list)):
             for j in range(len(eta_list)):
-                y_GD[i,j,:], Niter_GD = GD(X, y, beta0, Niter=Niter, tol=tol, eta=eta_list[j], lmb=lmb_list[i])
+                y_GD[i,j,:], Niter_GD[i,j], MSE_GD[i,j] = GD(X, y, beta0, Niter=Niter, tol=tol, eta=eta_list[j], lmb=lmb_list[i])
                 y_GD[i,j,:] = scaler.rescale(y_GD[i,j])
 
     if want_momGD:
-        y_momGD = np.zeros( (len(lmb_list), len(eta_list), len(y), 1) )
+        y_momGD     = np.zeros( (len(lmb_list), len(eta_list), len(y), 1) )
+        Niter_momGD = np.zeros( (len(lmb_list), len(eta_list)) )
+        MSE_momGD   = np.zeros( (len(lmb_list), len(eta_list), Niter+1) ) 
 
         for i in range(len(lmb_list)):
             for j in range(len(eta_list)):
-                y_momGD[i,j,:], Niter_momGD = momGD(X, y, beta0, Niter=Niter, tol=tol, eta=eta_list[j], lmb=lmb_list[i], delta_mom=delta_mom)
+                y_momGD[i,j,:], Niter_momGD[i,j], MSE_momGD[i,j] = momGD(X, y, beta0, Niter=Niter, tol=tol, eta=eta_list[j], lmb=lmb_list[i], delta_mom=delta_mom)
                 y_momGD[i,j,:] = scaler.rescale(y_momGD[i,j])
        
     if want_SGD:
         # Use best eta and lambda from GD- and momGD-analysis
         # best lambda = 0 -> OLS, no L2-penalty
         # best eta = eta0_SGD in parameter above
-        mom_SGD_bool = False # change if want (True) or not want (False) momentum
-
-        """y_SGD = np.zeros( (len(m_list), len(n_epochs_list), len(y), 1) )
+        
+        y_SGD        = np.zeros( (len(m_list), len(eta_list), len(y), 1) )
+        n_epochs_SGD = np.zeros( (len(m_list), len(eta_list)) )
+        MSE_SGD      = np.zeros( (len(m_list), len(eta_list), Niter+1) ) 
         
         for i in range(len(m_list)):
-            for j in range(len(n_epochs_list)):
-                y_SGD[i,j,:], n_epochs_SGD = SGD(X, y, beta0, n_epochs=n_epochs_list[j], m=m_list[i], tol=tol, eta0=eta_best, delta_mom=delta_mom,  momentum=mom_SGD_bool)
-                y_SGD[i,j,:] = scaler.rescale(y_SGD[i,j])"""
-        
-        y_SGD = np.zeros( (len(m_list), len(eta_list2), len(y), 1) )
-        
-        for i in range(len(m_list)):
-            for j in range(len(eta_list2)):
-                y_SGD[i,j,:], n_epochs_SGD = SGD(X, y, beta0, n_epochs=Niter, m=m_list[i], tol=tol, eta0=eta_list2[j], delta_mom=delta_mom,  momentum=mom_SGD_bool)
+            for j in range(len(eta_list)):
+                y_SGD[i,j,:], n_epochs_SGD[i,j], MSE_SGD[i,j] = SGD(X, y, beta0, n_epochs=Niter, m=m_list[i], tol=tol, eta0=eta_list[j], delta_mom=delta_mom,  momentum=mom_SGD_bool)
                 y_SGD[i,j,:] = scaler.rescale(y_SGD[i,j])
         
 
     if want_SGD_skl:
-        n_epochs_SGD_skl = 10
-        y_SGD_skl, n_epochs_SGD_skl = sklearn_SGD(X, y, n_epochs=n_epochs_SGD_skl, eta0=eta_best)
+        y_SGD_skl, n_epochs_SGD_skl = sklearn_SGD(X, y, n_epochs=Niter, eta0=eta_best)
         y_SGD_skl = y_SGD_skl.reshape(-1,1) # O.G. size = (N,) -> (N,1)
         y_SGD_skl = scaler.rescale(y_SGD_skl)
 
     if want_Adagrad:
-        SGD_Ada_bool = True # if want AdaGrad with SGD with momentum
-        mom_Ada_bool = False  # if want momentum to AdaGrad with plain GD (works if SGD_Ada_bool = False)
-
         if SGD_Ada_bool:
-            m_Ada_list = np.linspace(1,65,17)
-            m_Ada_list = m_list
-            y_Ada = np.zeros( (len(m_Ada_list), len(eta_list2), len(y), 1) )
+            y_Ada        = np.zeros( (len(m_list), len(eta_list2), len(y), 1) )
+            n_epochs_Ada = np.zeros( (len(m_list), len(eta_list)) )
+            MSE_Ada      = np.zeros( (len(m_list), len(eta_list), Niter+1) ) 
         
-            for i in range(len(m_Ada_list)):
+            for i in range(len(m_list)):
                 for j in range(len(eta_list2)):
-                    y_Ada[i,j,:], n_epochs_Ada = Adagrad(X,y,beta0,Niter,n_epochs_best,eta_list2[j],m_Ada_list[i],tol,delta_mom, mom_Ada_bool, SGD_Ada_bool)
+                    y_Ada[i,j,:], n_epochs_Ada[i,j], MSE_Ada[i,j] = Adagrad(X,y,beta0,Niter,eta_list2[j],m_list[i],delta_mom, mom_Ada_bool, SGD_Ada_bool, tol=tol)
                     y_Ada[i,j,:] = scaler.rescale(y_Ada[i,j])
         else:
-            y_Ada, Niter_Ada = Adagrad(X,y,beta0,Niter,n_epochs_best,eta_best,m_best,tol,delta_mom, mom_Ada_bool, SGD_Ada_bool)
+            MSE_Ada = np.zeros( Niter+1 ) 
+            y_Ada, Niter_Ada, MSE_Ada  = Adagrad(X,y,beta0,Niter,eta_best,m_best,delta_mom, mom_Ada_bool, SGD_Ada_bool, tol=tol)
             y_Ada = scaler.rescale(y_Ada)
     
     if want_RMSprop:
-        m_RMS_list = np.linspace(1,65,17)
-        m_RMS_list = m_list
-        y_RMS = np.zeros( (len(m_RMS_list), len(eta_list2), len(y), 1) )
+        y_RMS        = np.zeros( (len(m_list), len(eta_list2), len(y), 1) )
+        n_epochs_RMS = np.zeros( (len(m_list), len(eta_list)) )
+        MSE_RMS      = np.zeros( (len(m_list), len(eta_list), Niter+1) ) 
         
-        for i in range(len(m_RMS_list)):
+        for i in range(len(m_list)):
             for j in range(len(eta_list2)):
-                y_RMS[i,j,:], n_epochs_RMS = RMSprop(X,y,beta0,n_epochs_best,eta_list2[j],m_RMS_list[i])
+                y_RMS[i,j,:], n_epochs_RMS[i,j], MSE_RMS[i,j] = RMSprop(X,y,beta0, Niter, eta_list2[j],m_list[i], tol=tol)
                 y_RMS[i,j,:] = scaler.rescale(y_RMS[i,j])
     
     if want_Adam:
-        m_A_list = np.linspace(1,65,17)
-        m_A_list = m_list
-        y_A = np.zeros( (len(m_A_list), len(eta_list2), len(y), 1) )
+        y_A          = np.zeros( (len(m_list), len(eta_list2), len(y), 1) )
+        n_epochs_A   = np.zeros( (len(m_list), len(eta_list)) ) 
+        MSE_A        = np.zeros( (len(m_list), len(eta_list), Niter+1) ) 
         
-        for i in range(len(m_A_list)):
+        for i in range(len(m_list)):
             for j in range(len(eta_list2)):
-                y_A[i,j,:], n_epochs_A = Adam(X,y,beta0,n_epochs_best,eta_list2[j],m_A_list[i])
+                y_A[i,j,:], n_epochs_A[i,j], MSE_A[i,j] = Adam(X,y,beta0, Niter, eta_list2[j],m_list[i], tol=tol)
                 y_A[i,j,:] = scaler.rescale(y_A[i,j])
 
 
@@ -579,58 +686,77 @@ if __name__ == "__main__": # ---------------------------------------------------
     y = scaler.rescale(y)   
 
 
-   
+    
+    
 
     # ---------------------------- Plotting ------------------------
+    #---------- Plotting comparison ------------
+    fig = plt.figure(figsize=figsize)
+    fig.suptitle('MSE vs. Iterations / Epochs', fontsize=fontsize)
+    ax = fig.add_subplot(1,1,1)
+    n_iter = np.linspace(0,Niter,Niter+1)
+
     if want_OLS:
         plot(x, y, y_OLS, "OLS")
 
     if want_GD:
-        plot_heatmap(y, y_GD, "GD", lmb_list, eta_list)
+        i,j = plot_heatmap(y, y_GD, "GD", lmb_list, eta_list)
         # Plot best fit from heatplot: eta = 0.3, lambda = 0
-        plot(x, y, y_GD[0,-1,:], "GD", Niter=Niter_GD, eta=eta_best)
-        
+        plot(x, y, y_GD[i,j], "GD", Niter=Niter_GD[i,j], eta=eta_list[j], lmd=lmb_list[i])
+        ax.plot(n_iter, MSE_GD[i,j], label='GD')
+    
     if want_momGD:
-        plot_heatmap(y, y_momGD, "Momentum-GD", lmb_list, eta_list)
+        i,j = plot_heatmap(y, y_momGD, "Momentum-GD", lmb_list, eta_list)
         # Plot best fit from heatplot: eta = 0.3, lambda = 0
-        plot(x, y, y_momGD[0,-1,:], "Momentum-GD", Niter=Niter_momGD, eta=eta_best)
+        plot(x, y, y_momGD[i,j], "Momentum-GD", Niter=Niter_momGD[i,j], eta=eta_list[j], lmd=lmb_list[i])
+        ax.plot(n_iter, MSE_momGD[i,j], label='mom_GD')
         
     if want_SGD:
         # Plot best fit from heatplot: m = 1, n_epochs = 48
         if mom_SGD_bool:
             #plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, n_epochs_list)
-            plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, eta_list2)
-            plot(x, y, y_SGD[0,1], "Momentum-SGD", eta=eta_best, n_epochs=n_epochs_best, m=m_best)
+            i,j = plot_heatmap(y, y_SGD, "Momentum-SGD", m_list, eta_list)
+            plot(x, y, y_SGD[i,j], "Momentum-SGD", eta=eta_list[j], n_epochs=n_epochs_SGD[i,j], m=m_list[i])
+            ax.plot(n_iter, MSE_SGD[i,j], label='mom_SGD')
         else:
-            plot_heatmap(y, y_SGD, "SGD", m_list, n_epochs_list)
-            plot(x, y, y_SGD[0,1], "SGD", eta=eta_best, n_epochs=n_epochs_best, m=m_best)
+            i,j = plot_heatmap(y, y_SGD, "SGD", m_list, eta_list)
+            plot(x, y, y_SGD[i,j], "SGD", eta=eta_list[j], n_epochs=n_epochs_SGD[i,j], m=m_list[i])
+            ax.plot(n_iter, MSE_SGD[i,j], label='SGD')
         
     if want_SGD_skl:
         plot(x, y, y_SGD_skl, "SGD_Scikit_Learn", n_epochs=n_epochs_SGD_skl, eta=eta_best, m=n)
     
     if want_Adagrad:
         if SGD_Ada_bool:
-            #plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list)
-            plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
-            plot(x, y, y_Ada[11,0], "AdaGrad_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_Ada)
-            # i = 11 -> m = 45
+            i,j = plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_list, eta_list2)
+            plot(x, y, y_Ada[i,j], "AdaGrad_SGD", eta=eta_list2[j], n_epochs=n_epochs_Ada[i,j], m=m_list[i])
+            ax.plot(n_iter, MSE_Ada[i,j], label='AdaGrad')
+
         elif mom_Ada_bool:
             plot(x, y, y_Ada, "AdaGrad_Momentum", Niter=Niter_Ada, eta=eta_best)
+            ax.plot(n_iter, MSE_Ada, label='AdaGrad_mom_GD')
         else:
             plot(x, y, y_Ada, "AdaGrad", Niter=Niter_Ada, eta=eta_best)
+            ax.plot(n_iter, MSE_Ada, label='AdaGrad_GD')
     
     if want_RMSprop:
-        #plot_heatmap(y, y_RMS, "RMSprop_SGD", m_RMS_list, eta_list)
-        plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
-        plot(x, y, y_RMS[12,0], "RMSprop_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_RMS)
-        # i = 12 -> m = 49
+        i,j = plot_heatmap(y, y_RMS, "RMSprop_SGD", m_list, eta_list2)
+        plot(x, y, y_RMS[i,j], "RMSprop_SGD", eta=eta_list2[j], n_epochs=n_epochs_RMS[i,j], m=m_list[i])
+        ax.plot(n_iter, MSE_RMS[i,j], label='RMSprop')
     if want_Adam:
-        #plot_heatmap(y, y_A, "Adam_SGD", m_A_list, eta_list)
-        plot_heatmap(y, y_Ada, "AdaGrad_SGD", m_Ada_list, eta_list2)
-        plot(x, y, y_A[-2,0], "Adam_SGD", eta=eta_best_Ada, n_epochs=n_epochs_best, m=m_best_A)
-        # i = -2 -> m = 61
+        i,j = plot_heatmap(y, y_A, "Adam_SGD", m_list, eta_list2)
+        plot(x, y, y_A[i,j], "Adam_SGD", eta=eta_list2[j], n_epochs=n_epochs_A[i,j], m=m_list[i])
+        ax.plot(n_iter, MSE_A[i,j], label='Adam')
 
 
 
     
-    
+    ax.set_yscale('log') # Set the y-axis to logarithmic scale
+    ax.set_ylim(8e-3,1)
+    ax.set_xlabel('Iterations []', fontsize = lablesize)
+    ax.set_ylabel('MSE []', fontsize = lablesize)
+    ax.legend(loc='upper right', fontsize='small')
+    ax.grid()
+    fig.tight_layout()
+    fig.savefig("Additional_Plots/MSE.png")
+    plt.show()
