@@ -5,6 +5,12 @@ import seaborn as sns
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
 
+#import jax.numpy as jnp
+#from jax import grad
+import autograd.numpy as anp
+from autograd import grad
+    
+
 
 # ---------------- NOTES -------------------
 # 
@@ -20,17 +26,26 @@ lablesize = 15
 
 np.random.seed(0)  # For reproducibility
 
+def R2(y_data,X,beta):
+    return 1 - anp.sum((y_data - X @ beta) ** 2) / anp.sum((y_data - anp.mean(y_data)) ** 2)
 
-# Defining our Cost-Function
-def MSE(y_data, y_model):
-    n = np.size(y_data)
-    return np.sum((y_data - y_model)**2) / n
+
+# Defining our Cost-Function 
+def CostOLS(y_data,X,beta):
+    #n = np.size(y_data)
+    n = len(y_data)
+    return anp.sum((y_data-X @ beta)**2) / n
 
 # Defining Analytical Gradient of Cost-Function
-# See derivations Week 39
+# See derivations Week 39 Lecture notes
 def grad_anl(y_data, X, beta):
     n = np.size(y_data)
     return (2.0 / n)  *X.T @ (X @ beta - y_data)
+
+# MSE funciton for easy comparisong data vs. model
+def MSE(y_data, y_model):
+    n = np.size(y_data)
+    return np.sum((y_data - y_model)**2) / n
 
 
 
@@ -59,9 +74,6 @@ def OLS(X, y):
    # Make Prediction
     y_pred = X @ beta
 
-    #print("-------------OLS Regression-------------")
-    #print("Beta = \n", beta)
-
     return y_pred
 
 
@@ -78,7 +90,8 @@ def GD(X,y, beta0, Niter, tol, eta, lmb=0):
     iter = 0
 
     while iter < Niter and tol < diff:
-        new_change = eta * (grad_anl(y, X, beta) + 2 * lmb * beta)
+        #new_change = eta * (grad_anl(y, X, beta) + 2 * lmb * beta)
+        new_change = eta * (gradient(y, X, beta) + 2 * lmb * beta)
         beta -= new_change
         # Will be plain OLS if lmb = 0
 
@@ -111,7 +124,7 @@ def momGD(X,y, beta0, Niter, tol, eta, delta_mom, lmb=0):
     diff = tol + 1
     iter = 0
     while iter < Niter and tol < diff:
-        new_change = eta * grad_anl(y,X,beta) + delta_mom * change # add momentum
+        new_change = eta * gradient(y,X,beta) + delta_mom * change # add momentum
         beta -= new_change                                         # make change
         change = new_change                                        # save change
 
@@ -168,7 +181,7 @@ def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
                 yi = y[random_index:random_index+M]
 
                 eta = time_decay_eta(iter*m+i) #time_decay_eta(epoch*m+i)
-                new_change = eta * grad_anl(yi,Xi,beta) + delta_mom * change # add momentum
+                new_change = eta * gradient(yi,Xi,beta) + delta_mom * change # add momentum
                 beta -= new_change                                           # make change
                 change = new_change                                          # save change
 
@@ -189,9 +202,9 @@ def SGD(X, y, beta, n_epochs, m,  tol, eta0, delta_mom, momentum = True):
                 yi = y[random_index:random_index+M]
 
                 eta = time_decay_eta(iter*m+i) #time_decay_eta(epoch*m+i)
-                new_change = eta * grad_anl(yi,Xi,beta)  
+                new_change = eta * gradient(yi,Xi,beta)  
                 beta -= new_change                                                                          
-                beta -= eta * grad_anl(yi, Xi, beta)
+                beta -= eta * gradient(yi, Xi, beta)
             
             # Calculate MSE-value----------
             y_pred_i = X @ beta
@@ -232,7 +245,6 @@ def sklearn_SGD(X, y, n_epochs, eta0):
 
     return y_pred, n_epochs
 
-
 def Adagrad(X,y,beta0,Niter,eta,m,delta_mom,mom_bool,SGD_bool,tol):
     beta = np.copy(beta0)
 
@@ -266,8 +278,8 @@ def Adagrad(X,y,beta0,Niter,eta,m,delta_mom,mom_bool,SGD_bool,tol):
                 Xi = X[random_index:random_index+M]
                 yi = y[random_index:random_index+M]
 
-                Giter += grad_anl(yi,Xi,beta)**2
-                new_change = grad_anl(yi,Xi,beta)*eta/(delta+np.sqrt(Giter))
+                Giter += gradient(yi,Xi,beta)**2
+                new_change = gradient(yi,Xi,beta)*eta/(delta+np.sqrt(Giter))
 
                 beta -= new_change
 
@@ -281,8 +293,8 @@ def Adagrad(X,y,beta0,Niter,eta,m,delta_mom,mom_bool,SGD_bool,tol):
 
     else: # GD or momGD with AdaGrad
         while iter < Niter and tol < diff:
-            Giter += grad_anl(y,X,beta)**2
-            new_change = grad_anl(y,X,beta)*eta/(delta+np.sqrt(Giter))
+            Giter += gradient(y,X,beta)**2
+            new_change = gradient(y,X,beta)*eta/(delta+np.sqrt(Giter))
 
             if mom_bool: # add momentum
                 new_change += delta_mom * change
@@ -337,8 +349,8 @@ def RMSprop(X,y,beta0,n_epochs,eta,m,tol):
 
             # Accumulated gradient
 	        # Scaling with rho the new and the previous results
-            Giter = rho * Giter + (1-rho) * grad_anl(yi,Xi,beta)**2
-            new_change = grad_anl(yi,Xi,beta) * eta / (delta + np.sqrt(Giter))
+            Giter = rho * Giter + (1-rho) * gradient(yi,Xi,beta)**2
+            new_change = gradient(yi,Xi,beta) * eta / (delta + np.sqrt(Giter))
 
             beta -= new_change
         
@@ -392,8 +404,8 @@ def Adam(X,y,beta0,n_epochs,eta,m,tol):
             Xi = X[random_index:random_index+M]
             yi = y[random_index:random_index+M]
 
-            first_moment = beta1 * first_moment + (1-beta1) * grad_anl(yi,Xi,beta)
-            second_moment = beta2 * second_moment+(1-beta2) * grad_anl(yi,Xi,beta)**2
+            first_moment = beta1 * first_moment + (1-beta1) * gradient(yi,Xi,beta)
+            second_moment = beta2 * second_moment + (1-beta2) * gradient(yi,Xi,beta)**2
             first_term = first_moment / (1.0 - beta1**iter)
             second_term = second_moment / (1.0 - beta2**iter)
 
@@ -439,9 +451,9 @@ def plot(x, y, y_pred, title, lmd=0, Niter=0, eta=0, n_epochs=0, m=0):
                 ax.set_title(f'Niter = {Niter}, lmd = {lmd}, eta = {eta}', fontsize = lablesize)
     else: # our SGD-code
         if n_epochs == -1: #if convegence criteria was not reached
-            ax.set_title(f'n_epochs = Did not convergence, m = {m}\nlmd = {lmd}, eta0 = {eta}', fontsize = lablesize)
+            ax.set_title(f'n_epochs = Did not convergence, m = {m}\nlmd = {lmd}, eta = {eta}', fontsize = lablesize)
         else:
-            ax.set_title(f'n_epochs = {n_epochs}, m = {m}\nlmd = {lmd}, eta0 = {eta}', fontsize = lablesize)
+            ax.set_title(f'n_epochs = {n_epochs}, m = {m}\nlmd = {lmd}, eta = {eta}', fontsize = lablesize)
 
 
 
@@ -510,7 +522,9 @@ if __name__ == "__main__": # ---------------------------------------------------
     x = 2*np.random.rand(n,1)
     y = 2 + x + 3*x**2 - 2*x**3 + 0.1*np.random.randn(n,1)
 
-
+    # ------- automatic differentiation --------
+    want_Autograd     = False   # (true) if want to replace alytical gradient with JAX 
+    # ------------------------------------------
     want_OLS     = True
     want_GD      = True
     want_momGD   = True
@@ -532,6 +546,13 @@ if __name__ == "__main__": # ---------------------------------------------------
     # RMSprop with SGD
     # Adam    with SGD
     # ---------------------------
+
+    if want_Autograd: 
+        # Gradient wrt third argument (beta, 2 here)
+        #gradient = grad(CostOLS,2)
+        gradient = grad(CostOLS,2)
+    else:
+        gradient = grad_anl
 
     # Creating Design Matrix
     X = np.c_[x, x**2, x**3] # No Intecept given Scaling-process
@@ -583,11 +604,11 @@ if __name__ == "__main__": # ---------------------------------------------------
     # ----------------- Best values obtain from heatmaps -----------
     eta_best = 0.3      # obtain from GD and momGD analysis
     delta_mom = 0.2     # testing heatmap result in delta_mom in range [.2, .4] us good
-    m_best = 1          # from SGD
-    m_best_Ada = 45     # from SGD_AdaGrad
-    m_best_RMS = 49     # from SGD_RMSprop
-    m_best_A = 61       # from SGD_Adam
-    n_epochs_best = 48  # from SGD
+    #m_best = 1          # from SGD
+    #m_best_Ada = 45     # from SGD_AdaGrad
+    #m_best_RMS = 49     # from SGD_RMSprop
+    #m_best_A = 61       # from SGD_Adam
+    #n_epochs_best = 48  # from SGD
 
     # PS: random_index changes for AdaGrad, RMSprop and Adam if they
     # PS: are run together. Our best values (seen in plots) is obtained 
@@ -650,7 +671,7 @@ if __name__ == "__main__": # ---------------------------------------------------
                     y_Ada[i,j,:] = scaler.rescale(y_Ada[i,j])
         else:
             MSE_Ada = np.zeros( Niter+1 ) 
-            y_Ada, Niter_Ada, MSE_Ada  = Adagrad(X,y,beta0,Niter,eta_best,m_best,delta_mom, mom_Ada_bool, SGD_Ada_bool, tol=tol)
+            y_Ada, Niter_Ada, MSE_Ada  = Adagrad(X,y,beta0,Niter,eta_best,delta_mom=delta_mom, mom_bool=mom_Ada_bool, SGD_bool=SGD_Ada_bool, tol=tol) #Adagrad(X,y,beta0,Niter,eta_best,m_best,delta_mom, mom_Ada_bool, SGD_Ada_bool, tol=tol)
             y_Ada = scaler.rescale(y_Ada)
     
     if want_RMSprop:
@@ -753,7 +774,7 @@ if __name__ == "__main__": # ---------------------------------------------------
     
     ax.set_yscale('log') # Set the y-axis to logarithmic scale
     ax.set_ylim(8e-3,1)
-    ax.set_xlabel('Iterations []', fontsize = lablesize)
+    ax.set_xlabel('Iterations / Epochs []', fontsize = lablesize)
     ax.set_ylabel('MSE []', fontsize = lablesize)
     ax.legend(loc='upper right', fontsize='small')
     ax.grid()
