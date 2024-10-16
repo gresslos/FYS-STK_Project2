@@ -26,8 +26,8 @@ lablesize = 15
 
 np.random.seed(0)  # For reproducibility
 
-def R2(y_data,X,beta):
-    return 1 - anp.sum((y_data - X @ beta) ** 2) / anp.sum((y_data - anp.mean(y_data)) ** 2)
+def R2(y_data,y_model):
+    return 1 - anp.sum((y_data - y_model) ** 2) / anp.sum((y_data - anp.mean(y_data)) ** 2)
 
 
 # Defining our Cost-Function 
@@ -476,7 +476,6 @@ def plot_heatmap(y, y_pred, title, var1, var2):
     for i in range(len(var1)):
             for j in range(len(var2)):
                 MSE_list[i,j] = MSE(y, y_pred[i,j,:])
-    
     # Round variables to 2 decimal place to avoid floating-point errors
     var2 = np.round(var2, 2)
     
@@ -504,6 +503,13 @@ def plot_heatmap(y, y_pred, title, var1, var2):
         for j in range(len(MSE_list[0,:])):
             if MSE_list[i,j] == min_val:
                 i_min, j_min = i, j
+    
+    # -------------- Printing R2 values -------------------------
+    print(f'----------------- Optimal R2 values:  {title} ------------------------')
+    if title == "GD" or title == "Momentum-GD":
+        print(f'R2 (lambda = {var1[i_min]}, eta = {var2[j_min]}) = {R2(y, y_pred[i_min,j_min,:]):.3e}\n')
+    else:
+        print(f'R2 (m = {var1[i_min]}, eta = {var2[i_min]})    = {R2(y, y_pred[i_min,j_min,:]):.3e}\n')
     
     return i_min, j_min
 
@@ -781,3 +787,6 @@ if __name__ == "__main__": # ---------------------------------------------------
     fig.tight_layout()
     fig.savefig("Additional_Plots/MSE.png")
     plt.show()
+
+
+    # BG-version 16.10.2024
