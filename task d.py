@@ -129,6 +129,7 @@ def Design_Matrix_2D(deg, X):
     return Phi
 
 #------------------- Class for scaling and rescaling using StandardScaler -------#
+
 class Scaler:
     def __init__(self, classification):
         self.classification = classification
@@ -138,7 +139,7 @@ class Scaler:
             
         else:
             self.scaler_X = MinMaxScaler()
-            self.scaler_y = OneHotEncoder()
+            self.scaler_y = OneHotEncoder(sparse_output = False)
         
 
     def scaletrain(self, X, y):
@@ -167,10 +168,10 @@ class Scaler:
     
     def rescale(self, y_pred):
         # Rescale predictions (y_pred) to the original scale
-        if not self.classification:
-            return self.scaler_y.inverse_transform(y_pred)
-        else:
+        if self.classification == "Binary":
             pass;
+        else:
+            return self.scaler_y.inverse_transform(y_pred)
             
 
 
@@ -486,22 +487,21 @@ class Network(object):
                 change_weights = [-eta * gw + delta_mom * cw for gw,cw in zip(gradients[1],change_weights)]
             
                 self.weights = [w + cw for w,cw in zip(self.weights, change_weights)]                                            # make change
-                self.weights = [b + cb for b,cb in zip(self.biases, change_biases)]       
+                self.biases = [b + cb for b,cb in zip(self.biases, change_biases)]       
                 
                 # Check convergence after each iteration                           
-                y_pred = self.predict(x_scaled)
-                
-                if scale_bool:
-                    y_pred = scaler.rescale(y_pred)
-                
                 if not self.classification:
+                    y_pred = self.feedforward(x_scaled)
+                    
+                    if scale_bool:
+                        y_pred = scaler.rescale(y_pred)
+                        
                     newscore = cost_function(y_pred)
-                
+                    
                 else: 
-                    y_pred = np.where(y_pred > threshold, 1, 0)
-                    newscore = accuracy_score(y_pred, y)
-                
-                if abs(score-newscore)<=tol:
+                    newscore = self.accuracy(x_scaled, y)
+                    
+                if not self.classification and abs(score-newscore)<=tol:
                     score = newscore
                     print(f"Convergence reached after {iter} iterations.")
                     break;
@@ -928,7 +928,7 @@ For classification problems, the tolerance check is ignored. It often stops the 
 too early because of 1 single step that is too small.
 """
 
-"""
+
 X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
 
 y = y.reshape(-1,1)
@@ -942,11 +942,10 @@ lmbd_vals = np.logspace(-5, 1, 7)
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         try:
-            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
             MLP.reset_weights()
         except RuntimeWarning:
             MLP.reset_weights()
             continue;  
         print(f"Eta: {eta}, lambda: {lmbd}, Accuracy:{accuracy}")
         
-"""
