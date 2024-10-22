@@ -450,6 +450,7 @@ class Network(object):
     
     def GD (self, X, y, eta, lmb, delta_mom, scale_bool, Niter, tol, threshold = 0.5):
 
+        # Establishing the cost function to evaluate the loss at each epoch
         cost_function = self.costfunc(y)   
         
         # Scaling the data if needed
@@ -458,17 +459,17 @@ class Network(object):
         else:
             x_scaled, y_scaled = X, y
         
-        y_pred = self.predict(x_scaled)
-        
-        if scale_bool:
-            y_pred = scaler.rescale(y_pred)
-        
         if not self.classification:
+            y_pred = self.feedforward(x_scaled)
+            
+            if scale_bool:
+                y_pred = scaler.rescale(y_pred)
+                
             score = cost_function(y_pred)
-        
+            
         else: 
-            y_pred = np.where(y_pred > threshold, 1, 0)
-            score = accuracy_score(y_pred, y)
+            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
+            score = self.accuracy(x_scaled, y)
         
         #diff = tol + 1
         iter = 0
@@ -519,19 +520,18 @@ class Network(object):
                 self.biases = [b + cb for b,cb in zip(self.biases, change_biases)]
                 
                 # Check convergence after each iteration                           
-                y_pred = self.predict(x_scaled)
-                
-                if scale_bool:
-                    y_pred = scaler.rescale(y_pred)
-                
                 if not self.classification:
+                    y_pred = self.feedforward(x_scaled)
+                    
+                    if scale_bool:
+                        y_pred = scaler.rescale(y_pred)
+                        
                     newscore = cost_function(y_pred)
-                
+                    
                 else: 
-                    y_pred = np.where(y_pred > threshold, 1, 0)
-                    newscore = accuracy_score(y_pred, y)
-                
-                if abs(score-newscore)<=tol:
+                    newscore = self.accuracy(x_scaled, y)
+                    
+                if not self.classification and abs(score-newscore)<=tol:
                     score = newscore
                     print(f"Convergence reached after {iter} iterations.")
                     break;
@@ -540,7 +540,6 @@ class Network(object):
     def SGD(self, X, y, n_epochs, n_batches, tol, eta0, lmb, delta_mom, scale_bool, threshold = 0.5):
         
         # Establishing the cost function to evaluate the loss at each epoch
-        
         cost_function = self.costfunc(y)   
         
         # Scaling the data if needed
@@ -549,16 +548,17 @@ class Network(object):
         else:
             x_scaled, y_scaled = X, y
         
-        y_pred = self.feedforward(x_scaled)
-        if scale_bool:
-            y_pred = scaler.rescale(y_pred)
-            
         if not self.classification:
+            y_pred = self.feedforward(x_scaled)
+            
+            if scale_bool:
+                y_pred = scaler.rescale(y_pred)
+                
             score = cost_function(y_pred)
-        
+            
         else: 
-            y_pred = np.where(y_pred > threshold, 1, 0)
-            score = accuracy_score(y_pred, y)
+            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
+            score = self.accuracy(x_scaled, y)
 
         n_epochs = int(n_epochs)
         n_batches = int(n_batches)
@@ -610,26 +610,18 @@ class Network(object):
 
             # Check convergence after all minibatches for the epoch
                         
-            cost_function = self.costfunc(y)   
-            
-            # Scaling the data if needed
-            if scale_bool:
-                x_scaled, y_scaled, scaler = self.scaletraining(X, y)
-            else:
-                x_scaled, y_scaled = X, y
-            
-            y_pred = self.feedforward(x_scaled)
-            if scale_bool:
-                y_pred = scaler.rescale(y_pred)
-                
             if not self.classification:
+                y_pred = self.feedforward(x_scaled)
+                
+                if scale_bool:
+                    y_pred = scaler.rescale(y_pred)
+                    
                 newscore = cost_function(y_pred)
-            
+                
             else: 
-                y_pred = np.where(y_pred > threshold, 1, 0)
-                newscore = accuracy_score(y_pred, y)
-            
-            if abs(score-newscore)<=tol:
+                newscore = self.accuracy(x_scaled, y)
+                
+            if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
                 print(f"Convergence reached after {epoch + 1} epochs.")
                 break;
@@ -641,7 +633,6 @@ class Network(object):
         mom_bool and sgd_bool define if you want to use momentum/SGD respectively
         """
         # Establishing the cost function to evaluate the loss at each epoch
-        
         cost_function = self.costfunc(y)   
         
         # Scaling the data if needed
@@ -650,11 +641,17 @@ class Network(object):
         else:
             x_scaled, y_scaled = X, y
         
-        y_pred = self.feedforward(x_scaled)
-        if scale_bool:
-            y_pred = scaler.rescale(y_pred)
+        if not self.classification:
+            y_pred = self.feedforward(x_scaled)
             
-        score = cost_function(y_pred)
+            if scale_bool:
+                y_pred = scaler.rescale(y_pred)
+                
+            score = cost_function(y_pred)
+            
+        else: 
+            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
+            score = self.accuracy(x_scaled, y)
         
         # AdaGrad parameter to avoid possible division by zero
         delta = 1e-8
@@ -709,23 +706,21 @@ class Network(object):
             # Check convergence after all minibatches for the epoch
             # Check convergence after all minibatches for the epoch
             
-            
-            y_pred = self.feedforward(x_scaled)
-            if scale_bool:
-                y_pred = scaler.rescale(y_pred)
-                
             if not self.classification:
-                newscore = cost_function(y_pred)
-            
-            else: 
-                y_pred = np.where(y_pred > threshold, 1, 0)
-                newscore = accuracy_score(x_scaled, y)
+                y_pred = self.feedforward(x_scaled)
                 
-            if abs(score-newscore)<=tol:
+                if scale_bool:
+                    y_pred = scaler.rescale(y_pred)
+                    
+                newscore = cost_function(y_pred)
+                
+            else: 
+                newscore = self.accuracy(x_scaled, y)
+                
+            if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
                 print(f"Convergence reached after {epoch + 1} epochs.")
                 break;
-            score = newscore    
 
         print("Training complete.")
                   
@@ -811,7 +806,7 @@ class Network(object):
             else: 
                 newscore = self.accuracy(x_scaled, y)
                 
-            if abs(score-newscore)<=tol:
+            if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
                 print(f"Convergence reached after {epoch + 1} epochs.")
                 break;
@@ -913,7 +908,7 @@ class Network(object):
                 ypred=y_prednew
                 newscore = self.accuracy(x_scaled, y)
             
-            if abs(score-newscore)<=tol:
+            if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
                 print(f"Convergence reached after {epoch + 1} epochs.")
                 break;
@@ -928,12 +923,17 @@ your cost function. For Multiclass classification, use CostCrossEntropy
 This here is only a very tentative example of a grid search using Adam. I will
 update the other methods and look into potential bugs with scaling/score calculation
 at a later date.
+
+For classification problems, the tolerance check is ignored. It often stops the training 
+too early because of 1 single step that is too small.
+"""
+
 """
 X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
 
 y = y.reshape(-1,1)
 
-MLP = Network([30,100,1], RELU, sigmoid, CostLogReg)
+MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
 MLP.reset_weights()
 MLP.set_classification()
 
@@ -942,9 +942,11 @@ lmbd_vals = np.logspace(-5, 1, 7)
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         try:
-            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'Adam', scale_bool = True, tol = 1e-8)
+            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
             MLP.reset_weights()
         except RuntimeWarning:
             MLP.reset_weights()
             continue;  
         print(f"Eta: {eta}, lambda: {lmbd}, Accuracy:{accuracy}")
+        
+"""
