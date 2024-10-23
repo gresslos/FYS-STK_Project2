@@ -104,9 +104,13 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     
     model = LogisticRegression(learning_rate=0.001, t1=10, gamma=0.1, lam=1e-2,
-                               num_iterations=1000, n_epochs=10000, 
-                               m=8, overflow=True
+                               num_iterations=1000, n_epochs=100, 
+                               m=10, overflow=True
                                )
+    
+    """
+    CHOOSE M, FIND OPTIMAL LAMBDA AND ETA WITH HEATMAP
+    """
     
     model.SGDfit(X_train, y_train)
     predictions = model.predict(X_test)
