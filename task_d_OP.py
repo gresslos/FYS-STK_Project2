@@ -356,11 +356,20 @@ class Network(object):
              y_pred = scaler.rescale(y_pred)
              
          score = cost_function_train(y_pred)
-     
-     else: 
-         score = self.accuracy(X_scaled, y)
          
-     return score
+         return score
+     elif self.classification == "Multiclass":
+         score = self.accuracy(X_scaled, y)
+         return score
+     
+     elif self.classification == "Binary": 
+         score0 = self.accuracy(X_scaled, y)[0]
+         score1 = self.accuracy(X_scaled, y)[1]
+         score2 = self.accuracy(X_scaled, y)[2]
+         score3 = self.accuracy(X_scaled, y)[3]
+         score4 = self.accuracy(X_scaled, y)[4]
+         
+         return (score0, score1, score2, score3, score4)
     
     
     
@@ -441,7 +450,17 @@ class Network(object):
         
         if self.classification == "Binary":
             predictions = np.where(y_pred > threshold, 1, 0)
-            return np.average((y == predictions))
+            
+            #Testing for correlations (true/false positive/negatives)
+            
+            # Calculate correlations
+            TP = np.sum((predictions == 1) & (y == 1))/len(y)  # True Positives
+            TN = np.sum((predictions == 0) & (y == 0))/len(y)  # True Negatives
+            FP = np.sum((predictions == 1) & (y == 0))/len(y)  # False Positives
+            FN = np.sum((predictions == 0) & (y == 1))/len(y)  # False Negatives
+            accuracy = np.mean(predictions == y)
+            
+            return (accuracy, TP, TN, FP, FN)
         
         
     
@@ -956,6 +975,18 @@ at a later date.
 
 For classification problems, the tolerance check is ignored. It often stops the training 
 too early because of 1 single step that is too small.
+
+ACCURACY NOW GIVES A TUPLE OF 5 ELEMENTS:
+    
+    0. Accuracy score;
+    1. Rate of true positives;
+    2. Rate of true negatives;
+    3. Rate of false positives;
+    4. Rate of false negatives.
+
+
+As such, 1. and 2. should add up to 0. If this doesn't happen, let me know because it is a bug.
+
 """
 
 # ---------------- NOTES -------------------
