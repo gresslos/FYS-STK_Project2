@@ -129,6 +129,7 @@ def Design_Matrix_2D(deg, X):
     return Phi
 
 #------------------- Class for scaling and rescaling using StandardScaler -------#
+
 class Scaler:
     def __init__(self, classification):
         self.classification = classification
@@ -138,7 +139,7 @@ class Scaler:
             
         else:
             self.scaler_X = MinMaxScaler()
-            self.scaler_y = OneHotEncoder()
+            self.scaler_y = OneHotEncoder(sparse_output = False)
         
 
     def scaletrain(self, X, y):
@@ -167,10 +168,10 @@ class Scaler:
     
     def rescale(self, y_pred):
         # Rescale predictions (y_pred) to the original scale
-        if not self.classification:
-            return self.scaler_y.inverse_transform(y_pred)
-        else:
+        if self.classification == "Binary":
             pass;
+        else:
+            return self.scaler_y.inverse_transform(y_pred)
             
 
 
@@ -344,11 +345,20 @@ class Network(object):
              y_pred = scaler.rescale(y_pred)
              
          score = cost_function_train(y_pred)
-     
-     else: 
-         score = self.accuracy(X_scaled, y)
          
-     return score
+         return score
+     elif self.classification == "Multiclass":
+         score = self.accuracy(X_scaled, y)
+         return score
+     
+     elif self.classification == "Binary": 
+         score0 = self.accuracy(X_scaled, y)[0]
+         score1 = self.accuracy(X_scaled, y)[1]
+         score2 = self.accuracy(X_scaled, y)[2]
+         score3 = self.accuracy(X_scaled, y)[3]
+         score4 = self.accuracy(X_scaled, y)[4]
+         
+         return (score0, score1, score2, score3, score4)
 
     #-------------- LECTURE NOTES FROM WEEK 42-------------#
     
@@ -421,7 +431,17 @@ class Network(object):
         
         if self.classification == "Binary":
             predictions = np.where(y_pred > threshold, 1, 0)
-            return np.average((y == predictions))
+            
+            #Testing for correlations (true/false positive/negatives)
+            
+            # Calculate correlations
+            TP = np.sum((predictions == 1) & (y == 1))/len(y)  # True Positives
+            TN = np.sum((predictions == 0) & (y == 0))/len(y)  # True Negatives
+            FP = np.sum((predictions == 1) & (y == 0))/len(y)  # False Positives
+            FN = np.sum((predictions == 0) & (y == 1))/len(y)  # False Negatives
+            accuracy = np.mean(predictions == y)
+            
+            return (accuracy, TP, TN, FP, FN)
         
         
     
@@ -486,22 +506,21 @@ class Network(object):
                 change_weights = [-eta * gw + delta_mom * cw for gw,cw in zip(gradients[1],change_weights)]
             
                 self.weights = [w + cw for w,cw in zip(self.weights, change_weights)]                                            # make change
-                self.weights = [b + cb for b,cb in zip(self.biases, change_biases)]       
+                self.biases = [b + cb for b,cb in zip(self.biases, change_biases)]       
                 
                 # Check convergence after each iteration                           
-                y_pred = self.predict(x_scaled)
-                
-                if scale_bool:
-                    y_pred = scaler.rescale(y_pred)
-                
                 if not self.classification:
+                    y_pred = self.feedforward(x_scaled)
+                    
+                    if scale_bool:
+                        y_pred = scaler.rescale(y_pred)
+                        
                     newscore = cost_function(y_pred)
-                
+                    
                 else: 
-                    y_pred = np.where(y_pred > threshold, 1, 0)
-                    newscore = accuracy_score(y_pred, y)
-                
-                if abs(score-newscore)<=tol:
+                    newscore = self.accuracy(x_scaled, y)
+                    
+                if not self.classification and abs(score-newscore)<=tol:
                     score = newscore
                     print(f"Convergence reached after {iter} iterations.")
                     break;
@@ -926,14 +945,26 @@ at a later date.
 
 For classification problems, the tolerance check is ignored. It often stops the training 
 too early because of 1 single step that is too small.
+
+ACCURACY NOW GIVES A TUPLE OF 5 ELEMENTS:
+    
+    0. Accuracy score;
+    1. Rate of true positives;
+    2. Rate of true negatives;
+    3. Rate of false positives;
+    4. Rate of false negatives.
+
+As such, 1. and 2. should add up to 0. If this doesn't happen, let me know because it is a bug.
 """
 
-"""
+
 X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
 
 y = y.reshape(-1,1)
 
-MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+print(y.shape[0])
+
+MLP = Network([30,100,100,1], sigmoid, sigmoid, CostLogReg)
 MLP.reset_weights()
 MLP.set_classification()
 
@@ -942,11 +973,10 @@ lmbd_vals = np.logspace(-5, 1, 7)
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         try:
-            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
             MLP.reset_weights()
         except RuntimeWarning:
             MLP.reset_weights()
             continue;  
         print(f"Eta: {eta}, lambda: {lmbd}, Accuracy:{accuracy}")
         
-"""

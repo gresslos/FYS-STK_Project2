@@ -356,17 +356,20 @@ class Network(object):
          score = cost_function_train(y_pred)
      
          return score
-     
+  
+  
      elif self.classification == "Multiclass":
          score = self.accuracy(X_scaled, y)
          return score
      
-     elif self.classification == "Binary":
+
+     elif self.classification == "Binary": 
          score0 = self.accuracy(X_scaled, y)[0]
          score1 = self.accuracy(X_scaled, y)[1]
          score2 = self.accuracy(X_scaled, y)[2]
          score3 = self.accuracy(X_scaled, y)[3]
          score4 = self.accuracy(X_scaled, y)[4]
+
          return (score0, score1, score2, score3, score4)
     
     
