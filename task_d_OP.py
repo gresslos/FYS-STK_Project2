@@ -17,7 +17,7 @@ import seaborn as sns
 from sklearn.utils import resample
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
+from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, confusion_matrix
 import sklearn.datasets
 
 from tqdm import tqdm
@@ -369,8 +369,9 @@ class Network(object):
          score2 = self.accuracy(X_scaled, y)[2]
          score3 = self.accuracy(X_scaled, y)[3]
          score4 = self.accuracy(X_scaled, y)[4]
+         predictions = self.accuracy(X_scaled, y)[5]
 
-         return (score0, score1, score2, score3, score4)
+         return (score0, score1, score2, score3, score4, predictions)
     
     
     
@@ -461,7 +462,7 @@ class Network(object):
             FN = np.sum((predictions == 0) & (y == 1))/len(y)  # False Negatives
             accuracy = np.mean(predictions == y)
             
-            return (accuracy, TP, TN, FP, FN)
+            return (accuracy, TP, TN, FP, FN, predictions)
         
         
     
@@ -1038,6 +1039,7 @@ X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
 
 y = y.reshape(-1,1)
 
+"""
 MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
 MLPGD.reset_weights()
 MLPGD.set_classification()
@@ -1073,9 +1075,9 @@ for i, eta in enumerate(eta_vals):
     
 
 
-iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=True, vmin=0.85)
-iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=True, vmin = 0.85)
-
+iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=False, vmin=0.85)
+iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=False, vmin = 0.85)
+"""
 
 
 #By inspecting these plots we determine the optimal lambda, which will be used in
@@ -1090,7 +1092,7 @@ MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
 MLP.reset_weights()
 MLP.set_classification()
 
-
+"""
 m_list = np.linspace(10, 100, 10)
 eta_vals = np.logspace(-3, -2, 11)
 eta_vals = np.round(eta_vals, 4)
@@ -1107,9 +1109,33 @@ for i, eta in enumerate(eta_vals):
             MLP.reset_weights()
             continue;  
 
-i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=True)
+i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=False)
 
 #By eye: best values: m=30, eta=0.0032
+"""
+
+
 
 final_accuracy = MLP.fit(X, y, n_batches=30, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-print(final_accuracy)
+
+#The true positive, false positive etc. rates are the number of cases divided by
+#total cases. Therefore TP+TN+FP+FN=1
+#In the confusion matrix TP+FP=1 and TN+FN=1
+
+print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[1]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
+print('\n')
+
+y_pred = final_accuracy[-1]
+print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
+
+"""
+Only 0.280 percent of people who had cancer were missed by this model.
+This translates to 0.176 percent of the total number of cases being false negatives.
+Since the dataset contains 569 different cases, there was 1 person who had
+cancer that the model missed.
+On the other hand, 2 people who didn't have cancer got more stress than they
+had to. 
+
+As of 24.10.2024 this is miles ahead of the logistic regression version
+that had about a 90 percent total accuracy
+"""
