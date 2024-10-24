@@ -347,8 +347,6 @@ class Network(object):
      #and returns the value of the cost function
      
      
-     
-     
      if not self.classification:
          y_pred=self.feedforward(X_scaled)
          
@@ -356,19 +354,22 @@ class Network(object):
              y_pred = scaler.rescale(y_pred)
              
          score = cost_function_train(y_pred)
-         
+     
          return score
+  
+  
      elif self.classification == "Multiclass":
          score = self.accuracy(X_scaled, y)
          return score
      
+
      elif self.classification == "Binary": 
          score0 = self.accuracy(X_scaled, y)[0]
          score1 = self.accuracy(X_scaled, y)[1]
          score2 = self.accuracy(X_scaled, y)[2]
          score3 = self.accuracy(X_scaled, y)[3]
          score4 = self.accuracy(X_scaled, y)[4]
-         
+
          return (score0, score1, score2, score3, score4)
     
     
@@ -453,7 +454,7 @@ class Network(object):
             
             #Testing for correlations (true/false positive/negatives)
             
-            # Calculate correlations
+            #Calculate correlations:
             TP = np.sum((predictions == 1) & (y == 1))/len(y)  # True Positives
             TN = np.sum((predictions == 0) & (y == 0))/len(y)  # True Negatives
             FP = np.sum((predictions == 1) & (y == 0))/len(y)  # False Positives
@@ -984,9 +985,7 @@ ACCURACY NOW GIVES A TUPLE OF 5 ELEMENTS:
     3. Rate of false positives;
     4. Rate of false negatives.
 
-
 As such, 1. and 2. should add up to 0. If this doesn't happen, let me know because it is a bug.
-
 """
 
 # ---------------- NOTES -------------------
@@ -1000,6 +999,38 @@ As such, 1. and 2. should add up to 0. If this doesn't happen, let me know becau
 fontsize = 18
 figsize = (6,6)
 lablesize = 15
+
+
+
+# Create heatmap
+def plot_heatmap(accuracy, var1, var2, title, vmin=0, saveplot=False):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(accuracy, annot=True, cmap="coolwarm", xticklabels=var2, yticklabels=var1, fmt='.3f', vmin=vmin)
+    
+    # Set original labels and title
+    if title == "GD" or title == "Momentum-GD":
+        plt.xlabel(r" Learning Rate, $\eta$ []", fontsize = lablesize)
+        plt.ylabel(r" L2-penalty, $\lambda$ []", fontsize = lablesize)
+    else:
+        plt.xlabel(r"Learning Rate, $\eta$ []", fontsize = lablesize)
+        plt.ylabel(r"Number of minibatches, m []", fontsize = lablesize)
+    
+    plt.title(f"Heatmap of accuracy values for {title}\n ", fontsize=fontsize)
+    plt.tight_layout()
+    if saveplot == True:
+        plt.savefig("Additional_Plots/" + title + "_heatmap.png")
+    plt.show()
+    
+    # ------------------- Find index for  --------------
+    max_val = np.max(accuracy)
+    for i in range(len(accuracy[:,0])):
+        for j in range(len(accuracy[0,:])):
+            if accuracy[i,j] == max_val:
+                i_max, j_max = i, j
+    
+    return i_max, j_max
+
+
 
 
 
@@ -1030,48 +1061,20 @@ for i, eta in enumerate(eta_vals):
         try:
             accuracyGD = MLPGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'GD', scale_bool = True, tol = 1e-17)
             accuracyMomGD = MLPMomGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
-            accuracy_listGD[i][j] = accuracyGD
-            accuracy_listMomGD[i][j] = accuracyMomGD
-            print(f"Eta: {eta}, lambda: {lmbd}, Accuracy (GD): {accuracyGD:.4f}, Accuracy (MomGD): {accuracyMomGD:.4f}")
+            accuracy_listGD[i][j] = accuracyGD[0]
+            accuracy_listMomGD[i][j] = accuracyMomGD[0]
+            print(f"Eta: {eta}, lambda: {lmbd}, Accuracy (GD): {accuracyGD[0]:.4f}, Accuracy (MomGD): {accuracyMomGD[0]:.4f}")
             MLPGD.reset_weights()
             MLPMomGD.reset_weights()
         except RuntimeWarning:
             MLPGD.reset_weights()
             MLPMomGD.reset_weights()
             continue;  
+    
 
 
-# Create heatmap
-def plot_heatmap(accuracy, var1, var2, title, vmin=0, saveplot=False):
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(accuracy, annot=True, cmap="coolwarm", xticklabels=var2, yticklabels=var1, fmt='.3f', vmin=vmin)
-    
-    # Set original labels and title
-    if title == "GD" or title == "Momentum-GD":
-        plt.xlabel(r" Learning Rate, $\eta$ []", fontsize = lablesize)
-        plt.ylabel(r" L2-penalty, $\lambda$ []", fontsize = lablesize)
-    else:
-        plt.xlabel(r"Learning Rate, $\eta$ []", fontsize = lablesize)
-        plt.ylabel(r"Number of minibatches, m []", fontsize = lablesize)
-    
-    plt.title(f"Heatmap of accuracy values for {title}\n ", fontsize=fontsize)
-    plt.tight_layout()
-    plt.show()
-    if saveplot == True:
-        plt.savefig("Additional_Plots/" + title + "_heatmap.png")
-    
-    
-    # ------------------- Find index for  --------------
-    max_val = np.max(accuracy)
-    for i in range(len(accuracy[:,0])):
-        for j in range(len(accuracy[0,:])):
-            if accuracy[i,j] == max_val:
-                i_max, j_max = i, j
-    
-    return i_max, j_max
-
-iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=True)
-iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=True)
+iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=True, vmin=0.85)
+iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=True, vmin = 0.85)
 
 
 
@@ -1087,6 +1090,7 @@ MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
 MLP.reset_weights()
 MLP.set_classification()
 
+
 m_list = np.linspace(10, 100, 10)
 eta_vals = np.logspace(-3, -2, 11)
 eta_vals = np.round(eta_vals, 4)
@@ -1096,19 +1100,16 @@ for i, eta in enumerate(eta_vals):
     for j, m in enumerate(m_list):
         try:
             accuracy = MLP.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-            accuracy_list[i][j] = accuracy
-            print(f"Eta: {eta}, m: {m}, Accuracy: {accuracy:.5f}")
+            accuracy_list[i][j] = accuracy[0]
+            print(f"Eta: {eta}, m: {m}, Accuracy: {accuracy[0]:.5f}")
             MLP.reset_weights()
         except RuntimeWarning:
             MLP.reset_weights()
             continue;  
 
-i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95)
+i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=True)
 
 #By eye: best values: m=30, eta=0.0032
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-final_accuracy = MLP.fit(X, y, n_batches = 30, n_epochs = 100, eta = 0.0032, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-prediction = MLP.feedforward(X_scaled)
-#get an overflow from prediction? why?
+final_accuracy = MLP.fit(X, y, n_batches=30, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+print(final_accuracy)
