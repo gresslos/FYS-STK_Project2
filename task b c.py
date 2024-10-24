@@ -6,11 +6,11 @@ Created on Wed Oct  9 10:31:48 2024
 """
 #---------------------imports-------------------------------#
 import autograd.numpy as np
-import random
 from autograd import grad, elementwise_grad
 
 from imageio.v2 import imread
 
+from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -22,7 +22,6 @@ from sklearn.model_selection import train_test_split
 
 import warnings
 warnings.simplefilter("error")
-random.seed(2023)
 #---------------- Cost, activation functions (Lecture notes) -------------#
 def CostOLS(target):
     
@@ -387,14 +386,35 @@ class Network(object):
         create a list with n minibatches that the data is split into 
         Data is shuffled before making the batches
         """
-        
+        """
         M = X.shape[0] // nbatches #size of minibatches
         batches=[]
         
         for i in range(nbatches):
             X_batch, y_batch = resample(X, y, replace= True, n_samples=M)
             batches.append((X_batch, y_batch))
-        return batches
+        return batches, X, y
+        """
+        data_size = X.shape[0]
+        indices = np.arange(data_size)  # Create an array of indices for shuffling
+
+        # Shuffle the indices without replacement
+        np.random.shuffle(indices)
+
+        # Shuffle both input data and target data using the shuffled indices
+        shuffled_inputs = X[indices]
+        shuffled_targets = y[indices]
+
+        # Split the shuffled data into mini-batches
+        M = data_size // nbatches  # Size of each mini-batch
+        minibatches = []
+
+        for i in range(nbatches):
+            X_batch = shuffled_inputs[i*M:(i+1)*M]
+            y_batch = shuffled_targets[i*M:(i+1)*M]
+            minibatches.append((X_batch, y_batch))
+
+        return minibatches, shuffled_inputs, shuffled_targets
     
     def scaletraining (self, x, y):
         # Scale values
@@ -515,7 +535,7 @@ class Network(object):
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
 
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
 
         t0 = 1  # Arbitrary t0
         """
@@ -600,7 +620,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         if SGD_bool:
             n_batches = int(n_batches)
-            minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+            minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         else:
             n_batches = 1
         M = X.shape[0] // n_batches
@@ -656,11 +676,11 @@ class Network(object):
             
             if abs(score-newscore)<=tol:
                 score = newscore
-                print(f"Convergence reached after {epoch + 1} epochs.")
+                #print(f"Convergence reached after {epoch + 1} epochs.")
                 break;
             score = newscore    
 
-        print("Training complete.")
+        #print("Training complete.")
                   
     def RMSprop(self, X, y, n_epochs, eta, lmb, n_batches, tol, scale_bool):
         """
@@ -675,11 +695,11 @@ class Network(object):
             x_scaled, y_scaled, scaler = self.scaletraining(X, y)
         else:
             x_scaled, y_scaled = X, y
-        
         y_pred = self.feedforward(x_scaled)
         if scale_bool:
             y_pred = scaler.rescale(y_pred)
-            
+          
+        
         score = cost_function(y_pred)
         
         # Value for parameter rho
@@ -690,7 +710,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         # ---------------------------------------------------
 
         # Initialize accumulated squared gradients
@@ -771,7 +791,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         # -------------------------------------------------
         
         s_biases = [np.zeros(i.shape) for i in self.biases]
@@ -837,7 +857,7 @@ want_gridsearch = False
 
 want_1D = False
 
-want_franke = True               
+want_franke = True        
 #------------------------- Testing with simple 1D function --------------------#
 """
 To do: test different numbers of hidden neurons with 1 hidden layer, 
@@ -864,9 +884,11 @@ Questions in the project:
     no activation function is needed (or, in other words, the activation function
     f(z) is simply z).
 """    
-if want_1D:
+if want_1D or want_neurons:
     
-    want_terrain = False
+    want_franke = False
+    
+    np.random.seed(2024)
     
     n = 1000
     x = 2*np.random.rand(n,1)
@@ -878,30 +900,106 @@ if want_franke:
     
     want_neurons = False
     want_gridsearch = False #Safeguards in case I forget to manually switch them off
-    #-------------- Taken from the task a) code from last project
+    #-------------- Taken from the op_task_e code from last project - bootstrap analysis ------------#
+    def bootstrap_comp(x, y, z, n_bootstraps=100, mindeg=1, maxdeg=15, interval=1):
+
+        x_flat = x.flatten()
+        y_flat = y.flatten()
+        z_flat = z.flatten()
+
+        X = np.vstack((x_flat,y_flat)).T
+        X_train, X_test, z_train, z_test = train_test_split(X, z_flat, test_size=0.25)
+        # Note: X[:,0] = x_flat  X[:,1] = y_flat
+        
+        deg = np.arange(mindeg, maxdeg+1, interval) #degrees of polynomial
+        
+        
+        error_test    = np.zeros(len(deg))
+        bias_test     = np.zeros(len(deg))
+        variance_test = np.zeros(len(deg))
+        
+        error_train = np.zeros(len(deg))
+        bias_train = np.zeros(len(deg))
+        variance_train = np.zeros(len(deg))
+        
+        for i in tqdm( range(len(deg)) ):
+            z_train = z_train.reshape(-1,1)
+            z_test = z_test.reshape(-1,1)
+            
+        
+            #same number of points in the x and y direction
+            #creates an array with n_inputs lines and n_bootstraps columns
+            z_pred = np.empty((X_test.shape[0], n_bootstraps))
+            z_tilde = np.empty((X_train.shape[0], n_bootstraps)) #pred is for test data, tilde for train data
+            
+            # Making Design Matrix Phi 
+            Phi_train = Design_Matrix_2D(deg[i], X_train)
+            Phi_test = Design_Matrix_2D(deg[i], X_test)
+            
+            # Initiating a network with the correct number of input neurons, 100
+            # hidden neurons and 1 output
+            num_feats = int((i+1 + 1) *(i+1 + 2) / 2 - 1)
+            
+            MLP = Network([num_feats,100,1], sigmoid, identity, CostOLS) 
+            
+            for j in range(n_bootstraps):
+            
+                #make resampled design matrix, targets (scaling is handled by the network fit)
+                
+                X_, z_ = resample(X_train, z_train)
+                Phi_train_ = Design_Matrix_2D(deg[i], X_)
+
+                
+                #for every bootstrap, the network must be reset
+                MLP.reset_weights()
+                MLP.fit(Phi_train_, z_, n_batches = 10, n_epochs = 100, eta = 0.01, lmb = 0.01, delta_mom = 0, method = 'Adagrad', scale_bool = True, tol = 1e-6)
+                
+
+                # Evaluate the new model on the same testing and training data each time.
+                # The j-th column of z_pred corresponds to the j-th bootstrap
+                z_pred[:, j]  = MLP.predict(Phi_train_, z_, Phi_test, z_test, scale_bool = True).flatten()
+                z_tilde[:, j] = MLP.predict(Phi_train_, z_, Phi_train, z_train, scale_bool = True).flatten()
+            
+            
+            error_test[i]    = np.mean( np.mean((z_test - z_pred)**2, axis=1, keepdims=True) )
+            print(f"degree {i}, MSE test {error_test[i]}")
+            bias_test[i]     = np.mean( (z_test - np.mean(z_pred, axis=1, keepdims=True))**2 )
+            variance_test[i] = np.mean( np.var(z_pred, axis=1, keepdims=True)                )
+            
+            error_train[i]    = np.mean( np.mean((z_train - z_tilde)**2, axis=1, keepdims=True) )
+            print(f"degree {i}, MSE train {error_train[i]}")
+            bias_train[i]     = np.mean( (z_train - np.mean(z_tilde, axis=1, keepdims=True))**2 )
+            variance_train[i] = np.mean( np.var(z_tilde, axis=1, keepdims=True)                 )
+        
+        
+        
+        plt.figure(dpi=200)
+        plt.yscale('log')
+        plt.plot(deg, error_test, label='Mean Square Error', color='red')
+        plt.plot(deg, bias_test, label='Bias', color='blue')
+        plt.plot(deg, variance_test, label='Variance', color='lime')
+        plt.xlabel('Polynomial Degree')
+        plt.ylabel('Error')
+        plt.xticks(deg)
+        plt.title('Bias-Variance Trade Off (sigmoid activation)', fontsize=10)
+        plt.legend()
+        plt.grid()
+        plt.savefig("Bias variance sigmoid NOREP.png")
+        plt.show()
+        
     x = np.linspace(0, 1, 21)
     y = np.linspace(0, 1, 21)
     x, y = np.meshgrid(x,y)
 
     z = FrankeFunction(x, y)
-    deg_max = 6  # up to degree 5
+    bootstrap_comp(x, y, z)
     
-    x_flat = x.flatten()
-    y_flat = y.flatten()
-    z_flat = z.flatten()
-
-    X = np.vstack((x_flat,y_flat)).T
-
-    X_train, X_test, z_train, z_test = train_test_split(X, z_flat, test_size=0.25)
-
-        
-    z_train = z_train.reshape(-1,1)
-    z_test = z_test.reshape(-1,1)  #they are only reshaped for the purposes of train test split
     """
     Use optimal learning rate, lambda and method from the 1D test - justify that it would take too long to grid search
     with the terrain data, we decided to tune the params on
     
     RMS prop with 0.0001 eta and 0.01 lambda
+    """
     """
     for deg in range(1,deg_max):
         Phi_train = Design_Matrix_2D(deg, X_train)
@@ -917,47 +1015,51 @@ if want_franke:
         z_pred = MLP.predict(Phi_train, z_train, Phi_test, z_test, scale_bool = True)
     
         print(f"MSE for Franke's Function with degree {deg}: {mean_squared_error(z_test,z_pred)}")
-    
+    """
 #--------------------- Testing different numbers of neurons with no regular., eta = 0.001 ----------------------#
 
 if want_neurons:
     
     want_gridsearch = False #Safeguards in case I forget to manually switch them off
-    eta = 0.001
-    lam = 0
+    eta = 0.01
+    lam = 0.0001
     
-    MSEsSGD = list() 
-    MSEsAdagrad = list()
-    MSEsRMSprop = list()
-    MSEsADAM = list()
-    for i in range(25,101):
+    MSEsSGD, R2sSGD = list(), list() 
+    MSEsAdagrad, R2sAdagrad = list(), list()
+    MSEsRMSprop, R2sRMSprop = list(), list()
+    MSEsADAM, R2sADAM = list(), list()
+    for i in range(50,111):
         MLP = Network([2,i,1], sigmoid, identity, CostOLS) #MLP with 1 hidden layer with 25-100 neurons
         
         MLP.reset_weights()
         try:
-            MSESGD = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-6)
+            MSESGD, R2SGD = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-6)
             MSEsSGD.append(MSESGD)
+            R2sSGD.append(R2SGD)
         except RuntimeWarning:
             pass;
         
         MLP.reset_weights()
         try:    
-            MSEAdagrad = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'Adagrad', scale_bool = True, tol = 1e-6)
+            MSEAdagrad, R2Adagrad = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0.5, method = 'Adagrad', scale_bool = True, tol = 1e-6)
             MSEsAdagrad.append(MSEAdagrad)
+            R2sAdagrad.append(R2Adagrad)
         except RuntimeWarning:
             pass;   
      
         MLP.reset_weights()
         try:    
-            MSERMSprop = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-6)
+            MSERMSprop, R2RMSprop = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-6)
             MSEsRMSprop.append(MSERMSprop)
+            R2sRMSprop.append(R2RMSprop)
         except RuntimeWarning:
             pass;   
         
         MLP.reset_weights()    
         try:    
-            MSEADAM = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'Adam', scale_bool = True, tol = 1e-6)
+            MSEADAM, R2ADAM = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lam, delta_mom = 0, method = 'Adam', scale_bool = True, tol = 1e-6)
             MSEsADAM.append(MSEADAM)
+            R2sADAM.append(R2ADAM)
         except RuntimeWarning:
             pass;
             
@@ -965,11 +1067,25 @@ if want_neurons:
     plt.title('MSE vs. number of neurons, 10 batches, 100 epochs')
     plt.xlabel('Number of hidden neurons')
     plt.ylabel('Mean squared error')
-    plt.plot(range(25,101), MSEsSGD, color = 'orange', label = 'SGD')
-    plt.plot(range(25,101), MSEsAdagrad, color = 'blue', label = 'Adagrad')
-    plt.plot(range(25,101), MSEsRMSprop, color = 'purple', label = 'RMS prop')
-    plt.plot(range(25,101), MSEsADAM, color='red', label='ADAM')
-    plt.legend()    
+    plt.plot(range(50,111), MSEsSGD, color = 'orange', label = 'SGD')
+    plt.plot(range(50,111), MSEsAdagrad, color = 'blue', label = 'Adagrad')
+    plt.plot(range(50,111), MSEsRMSprop, color = 'purple', label = 'RMS prop')
+    plt.plot(range(50,111), MSEsADAM, color='red', label='ADAM')
+    plt.grid()
+    plt.savefig("Neurons plot MSE NOREP.png")
+    plt.legend() 
+    
+    plt.figure(1)
+    plt.title('R2 vs. number of neurons, 10 batches, 100 epochs')
+    plt.xlabel('Number of hidden neurons')
+    plt.ylabel('R2 score')
+    plt.plot(range(50,111), R2sSGD, color = 'orange', label = 'SGD')
+    plt.plot(range(50,111), R2sAdagrad, color = 'blue', label = 'Adagrad')
+    plt.plot(range(50,111), R2sRMSprop, color = 'purple', label = 'RMS prop')
+    plt.plot(range(50,111), R2sADAM, color='red', label='ADAM')
+    plt.grid()
+    plt.savefig("Neurons plot R2.png")
+    plt.legend()
 #--------------------- GRID SEARCH FOR OPTIMAL PARAMETERS --------------#
 
 #--------------------- Grid search from Morten, plotting with help from GPT ----------------#
@@ -1051,7 +1167,7 @@ if want_gridsearch:
     ax.set_title("MSE for SGD, 10 batches, 100 epochs")
     ax.set_ylabel("log10 (Learning rate)")
     ax.set_xlabel("log10 (Lambda)")
-    plt.savefig("MSE SGD own sigmoid.png")
+    plt.savefig("MSE SGD own sig NOREP.png")
     plt.show()
     
     
@@ -1061,7 +1177,7 @@ if want_gridsearch:
     ax1.set_title("MSE for Adagrad, 10 batches, 100 epochs")
     ax1.set_ylabel("log10 (Learning rate)")
     ax1.set_xlabel("log10(Lambda)")
-    plt.savefig("MSE Adagrad own sigmoid.png")
+    plt.savefig("MSE Adagrad own sig NOREP.png")
     plt.show()
     
 
@@ -1071,7 +1187,7 @@ if want_gridsearch:
     ax2.set_title("MSE for RMSprop, 10 batches, 100 epochs")
     ax2.set_ylabel("log10 (Learning rate)")
     ax2.set_xlabel("log10(Lambda)")
-    plt.savefig("MSE RMSprop own sigmoid.png")
+    plt.savefig("MSE RMSprop own sig NOREP.png")
     plt.show()
     
 
@@ -1081,7 +1197,7 @@ if want_gridsearch:
     ax3.set_title("MSE for ADAM, 10 batches, 100 epochs")
     ax3.set_ylabel("log10 (Learning rate)")
     ax3.set_xlabel("log10 (Lambda)")
-    plt.savefig("MSE ADAM own sigmoid.png")
+    plt.savefig("MSE ADAM own sig NOREP.png")
     plt.show()
     
     
@@ -1092,7 +1208,7 @@ if want_gridsearch:
     ax4.set_title("R2 for SGD, 10 batches, 100 epochs")
     ax4.set_ylabel("log10 (Learning rate)")
     ax4.set_xlabel("log10 (Lambda)")
-    plt.savefig("R2 SGD own sigmoid.png")
+    plt.savefig("R2 SGD own sig NOREP.png")
     plt.show()
     
     
@@ -1102,7 +1218,7 @@ if want_gridsearch:
     ax5.set_title("R2 for Adagrad, 10 batches, 100 epochs")
     ax5.set_ylabel("log10 (Learning rate)")
     ax5.set_xlabel("log10(Lambda)")
-    plt.savefig("R2 Adagrad own sigmoid.png")
+    plt.savefig("R2 Adagrad own sig NOREP.png")
     plt.show()
     
     
@@ -1112,7 +1228,7 @@ if want_gridsearch:
     ax6.set_title("R2 for RMSprop, 10 batches, 100 epochs")
     ax6.set_ylabel("log10 (Learning rate)")
     ax6.set_xlabel("log10(Lambda)")
-    plt.savefig("R2 RMSprop own sigmoid.png")
+    plt.savefig("R2 RMSprop own sig NOREP.png")
     plt.show()
     
 
@@ -1122,7 +1238,7 @@ if want_gridsearch:
     ax7.set_title("R2 for ADAM, 10 batches, 100 epochs")
     ax7.set_ylabel("log10 (Learning rate)")
     ax7.set_xlabel("log10 (Lambda)")
-    plt.savefig("R2 ADAM own sigmoid.png")
+    plt.savefig("R2 ADAM own sig NOREP.png")
     plt.show()
     
     
@@ -1137,7 +1253,7 @@ if want_gridsearch:
     better suited for the classification question, since that is the one where we encounter vanishing
     gradients.
     """
-    with open("MSE_R2_own_sig.txt","w") as file:
+    with open("MSE_R2_own_sig_NOREP.txt","w") as file:
         file.write(" ") #Reset the file if the program is re-ran
     
     # Optimal MSE and corresponding indices
@@ -1158,7 +1274,7 @@ if want_gridsearch:
     optimaletaRMSprop, optimalmbdRMSprop = eta_vals[indexoptimalRMSprop[0]], lmbd_vals[indexoptimalRMSprop[1]]
     optimaletaADAM, optimalmbdADAM = eta_vals[indexoptimalADAM[0]], lmbd_vals[indexoptimalADAM[1]]
     
-    with open("MSE_R2_own_sig.txt","a") as file:
+    with open("MSE_R2_own_sig_NOREP.txt","a") as file:
         file.write(f"SGD: Best MSE = {optimalMSESGD}; Best R2 = {optimalR2SGD}; Best eta = {optimaletaSGD}; Best lambda = {optimalmbdSGD}")
         file.write(f"Adagrad: Best MSE = {optimalMSEAdagrad}; Best R2 = {optimalR2Adagrad}; Best eta = {optimaletaAdagrad}; Best lambda = {optimalmbdAdagrad}")
         file.write(f"RMSprop: Best MSE = {optimalMSERMSprop}; Best R2 = {optimalR2RMSprop}; Best eta = {optimaletaRMSprop}; Best lambda = {optimalmbdRMSprop}")

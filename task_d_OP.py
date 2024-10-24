@@ -399,13 +399,35 @@ class Network(object):
         Data is shuffled before making the batches
         """
         
+        """
         M = X.shape[0] // nbatches #size of minibatches
         batches=[]
         
         for i in range(nbatches):
             X_batch, y_batch = resample(X, y, replace= True, n_samples=M)
             batches.append((X_batch, y_batch))
-        return batches
+        return batches, X, y
+        """
+        data_size = X.shape[0]
+        indices = np.arange(data_size)  # Create an array of indices for shuffling
+
+        # Shuffle the indices without replacement
+        np.random.shuffle(indices)
+
+        # Shuffle both input data and target data using the shuffled indices
+        shuffled_inputs = X[indices]
+        shuffled_targets = y[indices]
+
+        # Split the shuffled data into mini-batches
+        M = data_size // nbatches  # Size of each mini-batch
+        minibatches = []
+
+        for i in range(nbatches):
+            X_batch = shuffled_inputs[i*M:(i+1)*M]
+            y_batch = shuffled_targets[i*M:(i+1)*M]
+            minibatches.append((X_batch, y_batch))
+
+        return minibatches, shuffled_inputs, shuffled_targets
     
     
     
@@ -609,7 +631,7 @@ class Network(object):
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
 
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
 
         t0 = 1  # Arbitrary t0
         """
@@ -705,7 +727,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         if SGD_bool:
             n_batches = int(n_batches)
-            minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+            minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         else:
             n_batches = 1
         M = X.shape[0] // n_batches
@@ -805,7 +827,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         # ---------------------------------------------------
 
         # Initialize accumulated squared gradients
@@ -895,7 +917,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
         # -------------------------------------------------
         
         s_biases = [np.zeros(i.shape) for i in self.biases]
