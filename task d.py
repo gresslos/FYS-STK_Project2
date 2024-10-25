@@ -157,7 +157,7 @@ class Scaler:
             return X_scaled, y_scaled
         
         elif self.classification == "Multiclass":
-            y_scaled = self.scaler_y.fit_transform(y.reshape(-1, 1)).toarray()
+            y_scaled = self.scaler_y.fit_transform(y.reshape(-1, 1))
             return X_scaled, y_scaled
         
     def scaletest(self, X, y):
@@ -240,7 +240,6 @@ class Network(object):
         a=self.outputact(z)
         self.a_matrices.append(a)
         
-        #print(a.shape)
         return a
 
     def backprop(self, X, y, lmb): #taken from Michael Nielsen
@@ -348,17 +347,18 @@ class Network(object):
          
          return score
      elif self.classification == "Multiclass":
-         score = self.accuracy(X_scaled, y)
+         score = self.accuracy(X_scaled, y_scaled)[0]
          return score
      
      elif self.classification == "Binary": 
-         score0 = self.accuracy(X_scaled, y)[0]
-         score1 = self.accuracy(X_scaled, y)[1]
-         score2 = self.accuracy(X_scaled, y)[2]
-         score3 = self.accuracy(X_scaled, y)[3]
-         score4 = self.accuracy(X_scaled, y)[4]
-         
-         return (score0, score1, score2, score3, score4)
+         score0 = self.accuracy(X_scaled, y_scaled)[0]
+         score1 = self.accuracy(X_scaled, y_scaled)[1]
+         score2 = self.accuracy(X_scaled, y_scaled)[2]
+         score3 = self.accuracy(X_scaled, y_scaled)[3]
+         score4 = self.accuracy(X_scaled, y_scaled)[4]
+         predictions = self.accuracy(X_scaled, y_scaled)[5]
+
+         return (score0, score1, score2, score3, score4, predictions)
 
     #-------------- LECTURE NOTES FROM WEEK 42-------------#
     
@@ -380,16 +380,8 @@ class Network(object):
         """
         create a list with n minibatches that the data is split into 
         Data is shuffled before making the batches
-        """
         
-        """
-        M = X.shape[0] // nbatches #size of minibatches
-        batches=[]
-        
-        for i in range(nbatches):
-            X_batch, y_batch = resample(X, y, replace= True, n_samples=M)
-            batches.append((X_batch, y_batch))
-        return batches, X, y
+        Used to be with replacement - made without replacement with the help of GPT
         """
         data_size = X.shape[0]
         indices = np.arange(data_size)  # Create an array of indices for shuffling
@@ -410,7 +402,9 @@ class Network(object):
             y_batch = shuffled_targets[i*M:(i+1)*M]
             minibatches.append((X_batch, y_batch))
 
-        return minibatches, shuffled_inputs, shuffled_targets
+        return minibatches
+ 
+    
     def scaletraining (self, x, y):
         """
         What the scaler instance does depends on whether this is a classification
@@ -448,7 +442,7 @@ class Network(object):
         
         if self.classification == "Multiclass":
             predictions = np.argmax(y_pred, axis=1)  # For multi-class classification
-            return np.mean(predictions == np.argmax(y, axis=1))
+            return [np.mean(predictions == np.argmax(y, axis=1))]
         
         if self.classification == "Binary":
             predictions = np.where(y_pred > threshold, 1, 0)
@@ -462,7 +456,7 @@ class Network(object):
             FN = np.sum((predictions == 0) & (y == 1))/len(y)  # False Negatives
             accuracy = np.mean(predictions == y)
             
-            return (accuracy, TP, TN, FP, FN)
+            return (accuracy, TP, TN, FP, FN, predictions)
         
         
     
@@ -509,8 +503,7 @@ class Network(object):
             score = cost_function(y_pred)
             
         else: 
-            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
-            score = self.accuracy(x_scaled, y)
+            score = self.accuracy(x_scaled, y_scaled)[0]
         
         #diff = tol + 1
         iter = 0
@@ -539,7 +532,7 @@ class Network(object):
                     newscore = cost_function(y_pred)
                     
                 else: 
-                    newscore = self.accuracy(x_scaled, y)
+                    newscore = self.accuracy(x_scaled, y_scaled)[0]
                     
                 if not self.classification and abs(score-newscore)<=tol:
                     score = newscore
@@ -569,7 +562,7 @@ class Network(object):
                     newscore = cost_function(y_pred)
                     
                 else: 
-                    newscore = self.accuracy(x_scaled, y)
+                    newscore = self.accuracy(x_scaled, y_scaled)[0]
                     
                 if not self.classification and abs(score-newscore)<=tol:
                     score = newscore
@@ -597,14 +590,13 @@ class Network(object):
             score = cost_function(y_pred)
             
         else: 
-            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
-            score = self.accuracy(x_scaled, y)
+            score = self.accuracy(x_scaled, y_scaled)[0]
 
         n_epochs = int(n_epochs)
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
 
-        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
+        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
 
         t0 = 1  # Arbitrary t0
         """
@@ -659,7 +651,7 @@ class Network(object):
                 newscore = cost_function(y_pred)
                 
             else: 
-                newscore = self.accuracy(x_scaled, y)
+                newscore = self.accuracy(x_scaled, y_scaled)[0]
                 
             if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
@@ -690,8 +682,7 @@ class Network(object):
             score = cost_function(y_pred)
             
         else: 
-            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
-            score = self.accuracy(x_scaled, y)
+            score = self.accuracy(x_scaled, y_scaled)[0]
         
         # AdaGrad parameter to avoid possible division by zero
         delta = 1e-8
@@ -699,7 +690,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         if SGD_bool:
             n_batches = int(n_batches)
-            minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
+            minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         else:
             n_batches = 1
         M = X.shape[0] // n_batches
@@ -755,7 +746,7 @@ class Network(object):
                 newscore = cost_function(y_pred)
                 
             else: 
-                newscore = self.accuracy(x_scaled, y)
+                newscore = self.accuracy(x_scaled, y_scaled)[0]
                 
             if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
@@ -787,7 +778,7 @@ class Network(object):
             score = cost_function(y_pred)
             
         else: 
-            score = self.accuracy(x_scaled, y)
+            score = self.accuracy(x_scaled, y_scaled)[0]
         
         # Value for parameter rho
         rho = 0.99
@@ -797,7 +788,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
+        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         # ---------------------------------------------------
 
         # Initialize accumulated squared gradients
@@ -844,7 +835,7 @@ class Network(object):
                 newscore = cost_function(y_pred)
                 
             else: 
-                newscore = self.accuracy(x_scaled, y)
+                newscore = self.accuracy(x_scaled, y_scaled)[0]
                 
             if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
@@ -876,8 +867,7 @@ class Network(object):
             score = cost_function(y_pred)
             
         else: 
-            ypred=np.where(self.feedforward(x_scaled) > threshold, 1, 0)
-            score = self.accuracy(x_scaled, y)
+            score = self.accuracy(x_scaled, y_scaled)[0]
         
         # Value for parameters rho1 and rho2, see https://arxiv.org/abs/1412.6980
         rho1 = 0.9
@@ -888,7 +878,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
+        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         # -------------------------------------------------
         
         s_biases = [np.zeros(i.shape) for i in self.biases]
@@ -943,10 +933,7 @@ class Network(object):
                 newscore = cost_function(y_pred)
                 
             else: 
-                y_prednew = np.where(self.feedforward(x_scaled) > threshold, 1, 0)
-                #print(ypred == y_prednew)
-                ypred=y_prednew
-                newscore = self.accuracy(x_scaled, y)
+                newscore = self.accuracy(x_scaled, y_scaled)[0]
             
             if not self.classification and abs(score-newscore)<=tol:
                 score = newscore
@@ -954,6 +941,22 @@ class Network(object):
                 break;
           
             score = newscore 
+        
+#------------------------ TESTING MULTICLASS CLASSIFICATION ----------------------- #
+iris = sklearn.datasets.load_iris()
+inputs = iris.data
+targets = iris.target.reshape(-1,1)
+
+
+
+MLP = Network([4, 100, 3], sigmoid, softmax, CostCrossEntropy)
+MLP.set_classification()
+MLP.reset_weights()
+
+# SGD with 10 batches, 100 epochs, LR 0.1, lambda 0.1, momentum 0.5
+
+accuracy = MLP.fit(inputs, targets, n_batches = 10, n_epochs = 100, eta = 0.1, lmb = 0.1, delta_mom = 0.5, method = 'SGD', scale_bool = True, tol = 1e-17)
+print(accuracy)
 
 #---------------- Breast cancer data -------------#
 """
@@ -983,7 +986,6 @@ X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
 
 y = y.reshape(-1,1)
 
-print(y.shape[0])
 
 MLP = Network([30,100,100,1], sigmoid, sigmoid, CostLogReg)
 MLP.reset_weights()
@@ -994,7 +996,7 @@ lmbd_vals = np.logspace(-5, 1, 7)
 for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         try:
-            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
+            accuracy = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'Adam', scale_bool = True, tol = 1e-17)[0]
             MLP.reset_weights()
         except RuntimeWarning:
             MLP.reset_weights()
