@@ -3,8 +3,10 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
 from sklearn.model_selection import  train_test_split 
 
+from task_d_OP import plot_heatmap, Network, CostLogReg, sigmoid
+
 """
-copied from "Exercises Week 42: Logistic Regression and Optimization, reminders 
+copied LogisticRegression from "Exercises Week 42: Logistic Regression and Optimization, reminders 
 from week 38 and week 40", Hjorth-Jensen, Morten
 """
 
@@ -23,7 +25,7 @@ class LogisticRegression:
         self.n_epochs = n_epochs
         self.m = m
         
-        #boolean to change which version of sigmoid to use
+        #boolean to change which version of sigmoid to use in case of overflow
         self.overflow = overflow
         
         self.beta_logreg = None
@@ -48,7 +50,7 @@ class LogisticRegression:
                 y_predicted = self.sigmoid2(linear_model)
             
             # Gradient calculation
-            gradient = (X.T @ (y_predicted - y))/n_data
+            gradient = (X.T @ (y_predicted - y))/n_data + 2*self.lam*self.beta_logreg
             
             # Update beta_logreg
             self.beta_logreg -= self.learning_rate*gradient
@@ -63,12 +65,23 @@ class LogisticRegression:
         
         t0 = self.t1 * self.learning_rate
         
+        #WITHOUT replacement
+        data_size = X.shape[0]
+        indices = np.arange(data_size)
+        np.random.shuffle(indices)
+        
+        shuffled_inputs = X[indices]
+        shuffled_targets = y[indices]
+        
         change = 0.0
         for i in range(self.n_epochs):
             for j in range(self.m):
-                random_index = M*np.random.randint(self.m)
-                Xi = X[random_index:random_index+M, :]
-                yi = y[random_index:random_index+M]
+                
+                #WITH replacement
+                #random_index = M*np.random.randint(self.m)
+                
+                Xi = shuffled_inputs[j*M:(j+1)*M, :]
+                yi = shuffled_targets[j*M:(j+1)*M]
                 
                 linear_model = Xi @ self.beta_logreg
                 if self.overflow == False:
@@ -98,65 +111,134 @@ class LogisticRegression:
 
 
 
+
+
 if __name__ == "__main__":
+    
+    # ---------------- NOTES -------------------
+    # 
+    # figsize=(8,8)
+    #
+    # fontsize = fontsize
+    # 
+    # -------------------------------------------
+    
+    fontsize = 18
+    figsize = (6,6)
+    lablesize = 15
+    
     # Sample data
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     
-    model = LogisticRegression(learning_rate=0.001, t1=10, gamma=0.1, lam=1e-2,
-                               num_iterations=1000, n_epochs=100, 
-                               m=10, overflow=True
-                               )
+    eta_vals = np.logspace(-6, -2, 11)
+    eta_vals = np.round(eta_vals, 6)
+    lmbd_vals = np.logspace(-6, 1, 11)
+    lmbd_vals = np.round(lmbd_vals, 8)
+    accuracy_listGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
+    accuracy_listSGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
+    for i, eta in enumerate(eta_vals):
+        for j, lmb in enumerate(lmbd_vals):
+            try:
+                modelGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0.1, lam=lmb,
+                                           num_iterations=1000, n_epochs=100, 
+                                           m=10, overflow=True
+                                           )
+                modelSGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0.1, lam=lmb,
+                                           num_iterations=1000, n_epochs=100, 
+                                           m=10, overflow=True
+                                           )
+                modelGD.GDfit(X, y)
+                modelSGD.SGDfit(X, y)
+                predictionsGD = modelGD.predict(X)
+                predictionsSGD = modelSGD.predict(X)
+                accuracy_listGD[i][j] = accuracy_score(y, predictionsGD)
+                accuracy_listSGD[i][j] = accuracy_score(y, predictionsSGD)
+            except RuntimeWarning:
+                continue;  
     
-    """
-    CHOOSE M, FIND OPTIMAL LAMBDA AND ETA WITH HEATMAP
-    """
+    iGD_max, jGD_max = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, title='GD (LogReg)', vmin=0.8, saveplot=True, test_lmb=True)
+    iSGD_max, jSGD_max = plot_heatmap(accuracy_listSGD.T, lmbd_vals, eta_vals, title='Stochastic GD (LogReg)', vmin=0.8, saveplot=True, test_lmb=True)
+
+
     
-    model.SGDfit(X_train, y_train)
-    predictions = model.predict(X_test)
-    print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y_test, predictions):.3f}")
-    print(f"log_loss = {log_loss(y_test, predictions)}")
-    print(f"Confusion Matrix = {confusion_matrix(y_test, predictions, normalize='true')}")
+    final_model = LogisticRegression(learning_rate=0.003981, t1=10, gamma=0.1, lam=1.99526231,
+                                     num_iterations=1000, n_epochs=100, 
+                                     m=10, overflow=True
+                                     )
+    
+    final_model.SGDfit(X, y)
+    final_predictions = final_model.predict(X)
+    print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y, final_predictions):.3f}")
+    print(f"log_loss = {log_loss(y, final_predictions):.3f}")
+    print(f"Confusion Matrix = {confusion_matrix(y, final_predictions, normalize='true')}")
     print('\n')
+
+
+
+    #Compare to sklearn logistic regression
+    import matplotlib.pyplot as plt
+    from sklearn.model_selection import  train_test_split 
+    from sklearn.linear_model import LogisticRegression
     
-"""
-20.10.2024, output:
-Test set accuracy with Logistic Regression: = 0.930
-log_loss = 2.5205352020361644
-Confusion Matrix = [[0.8490566  0.1509434 ]
-[0.02222222 0.97777778]]
+    import warnings
+    warnings.filterwarnings('ignore')
+    
+    # Load the data
+    cancer = load_breast_cancer()
 
-If I have understood this correctly:
-Only missed 2% of the people who actually has cancer but 15% of healthy patients
-got really scared.
-Our model is "trigger happy".
-When you are looking for cancer this isn't the worst quality but of course more
-accuracy is better.
-"""
+    # Logistic Regression
+    logreg = LogisticRegression(solver='lbfgs') #L2 penalty is default in LogisticRegression
+    logreg.fit(X, y)
+    y_predSK = logreg.predict(X)
+    
+    #from sklearn.preprocessing import LabelEncoder
+    print("Test set accuracy with Logistic Regression (Scikit-Learn) = {:.3f}".format(logreg.score(X, y)))
+    print(f"log_loss = {log_loss(y, y_predSK):.3f}")
+    print(f"Confusion Matrix = {confusion_matrix(y, y_predSK, normalize='true')}")
+    print('\n')
 
 
 
-import matplotlib.pyplot as plt
-from sklearn.model_selection import  train_test_split 
-from sklearn.linear_model import LogisticRegression
-
-import warnings
-warnings.filterwarnings('ignore')
-
-# Load the data
-cancer = load_breast_cancer()
-
-X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, random_state=0)
-# Logistic Regression
-logreg = LogisticRegression(solver='lbfgs') #L2 penalty is default in LogisticRegression
-logreg.fit(X_train, y_train)
-predictions = logreg.predict(X_test)
-
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import cross_validate
-#Cross validation
-accuracy = cross_validate(logreg, X_test, y_test, cv=10)['test_score']
-print(f"Cross validation test scores: {accuracy}")
-print("Test set accuracy with Logistic Regression (Scikit-Learn): {:.3f}".format(logreg.score(X_test, y_test)))
-print(f"log_loss = {log_loss(y_test, predictions)}")
-print(f"Confusion Matrix = {confusion_matrix(y_test, predictions, normalize='true')}")
+    #Compare to neural network without hidden layers to show that it is
+    #equivalent to logistic regression
+    
+    #Network needs an activation function for the hidden layer, even when there 
+    #are no hidden layers.
+    #Made a trivial activation function because I don't want any funny business.
+    #A nice gut check for the fact that there is no hidden layer is that the
+    #result doesn't depend on the activation function given for the hidden layer.
+    def linear(X):
+        return X
+    
+    MLP = Network(sizes=[30,1], hiddenact=linear, outputact=sigmoid, costfunc=CostLogReg)
+    MLP.reset_weights()
+    MLP.set_classification()
+    
+    y = y.reshape(-1,1)
+    
+    eta_vals = np.logspace(-2, 2, 11)
+    eta_vals = np.round(eta_vals, 6)
+    lmbd_vals = np.logspace(-7, 0, 11)
+    lmbd_vals = np.round(lmbd_vals, 6)
+    accuracy_listNN = np.zeros( (len(eta_vals), len(lmbd_vals)) )
+    for i, eta in enumerate(eta_vals):
+        for j, lmb in enumerate(lmbd_vals):
+            try:
+                accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, 
+                                     eta = eta, t1=10, lmb = lmb, 
+                                     delta_mom = 0, method = 'SGD', scale_bool = True, 
+                                     tol = 1e-17)
+                accuracy_listNN[i][j] = accuracyNN[0]
+                MLP.reset_weights()
+            except RuntimeWarning:
+                MLP.reset_weights()
+                continue;
+    
+    iNN_max, jNN_max = plot_heatmap(accuracy_listNN.T, lmbd_vals, eta_vals, title='Stochastic GD (NN-LR)', vmin=0.8, saveplot=True, test_lmb=True)
+    
+    
+    accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000631, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
+    y_predNN = accuracyNN[-1]
+    print(f"Test set accuracy for Neural Network without hidden layers = {accuracy_score(y, y_predNN):.3f}")
+    print(f"log_loss = {log_loss(y, y_predNN):.3f}")
+    print(f"Confusion Matrix = {confusion_matrix(y, y_predNN, normalize='true')}")
