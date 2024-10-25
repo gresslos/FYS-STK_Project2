@@ -17,7 +17,7 @@ import seaborn as sns
 from sklearn.utils import resample
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, confusion_matrix
+from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, confusion_matrix, log_loss
 import sklearn.datasets
 
 from tqdm import tqdm
@@ -304,7 +304,7 @@ class Network(object):
     
     #-------------- PARTLY TAKEN FROM LECTURE NOTES FROM WEEK 42 ------------------#
     
-    def fit(self, X, y, n_batches, n_epochs, eta, lmb, delta_mom, method, scale_bool, tol, threshold = 0.5, X_val = None, y_val = None, SGD_bool = True):
+    def fit(self, X, y, n_batches, n_epochs, eta, lmb, delta_mom, method, scale_bool, tol, threshold = 0.5, t1=1, X_val = None, y_val = None, SGD_bool = True):
      """
      performs a fit of the network using a given gradient descent method (specified
      by "method")
@@ -331,7 +331,7 @@ class Network(object):
          self.GD(X, y, eta, lmb, delta_mom, scale_bool, n_epochs, tol)
      
      elif method == "SGD":
-         self.SGD(X, y, n_epochs, n_batches, tol, eta, lmb, delta_mom, scale_bool)
+         self.SGD(X, y, n_epochs, n_batches, tol, eta, lmb, delta_mom, scale_bool, t1)
          
      elif method == "Adagrad":
          self.Adagrad(X, y, n_epochs, eta, lmb, n_batches, tol, delta_mom, SGD_bool, scale_bool)
@@ -604,7 +604,7 @@ class Network(object):
     
     
     
-    def SGD(self, X, y, n_epochs, n_batches, tol, eta0, lmb, delta_mom, scale_bool, threshold = 0.5):
+    def SGD(self, X, y, n_epochs, n_batches, tol, eta0, lmb, delta_mom, scale_bool, t1, threshold = 0.5):
         
         # Establishing the cost function to evaluate the loss at each epoch
         cost_function = self.costfunc(y)   
@@ -633,7 +633,7 @@ class Network(object):
 
         minibatches, x_scaled, y_scaled = self.split_mini_batches(n_batches, x_scaled, y_scaled) # saves the batches and the reshuffled X and y
 
-        t0 = 1  # Arbitrary t0
+        #t0 = eta0 * t1  # No longer rbitrary t0, earlier it was set to 1
         """
         The old implementation of time decay got stuck with an MSE
         of 9.95 for the 1D function, regardless of eta or lambda - probably
@@ -643,7 +643,7 @@ class Network(object):
         """
         # Learning rate decay function (Inverse time decay)
         def time_decay_eta(eta0, t):
-            return eta0 / (1 + t/t0)
+            return eta0 / (1 + t/t1)
 
         for epoch in range(n_epochs):
             #print(epoch, score)
@@ -1000,38 +1000,25 @@ at a later date.
 For classification problems, the tolerance check is ignored. It often stops the training 
 too early because of 1 single step that is too small.
 
-ACCURACY NOW GIVES A TUPLE OF 5 ELEMENTS:
+ACCURACY NOW GIVES A TUPLE OF 6 ELEMENTS:
     
     0. Accuracy score;
     1. Rate of true positives;
     2. Rate of true negatives;
     3. Rate of false positives;
     4. Rate of false negatives.
-
-As such, 1. and 2. should add up to 0. If this doesn't happen, let me know because it is a bug.
+    5. The full prediction;
 """
-
-# ---------------- NOTES -------------------
-# 
-# figsize=(8,8)
-#
-# fontsize = fontsize
-# 
-# -------------------------------------------
-
-fontsize = 18
-figsize = (6,6)
-lablesize = 15
 
 
 
 # Create heatmap
-def plot_heatmap(accuracy, var1, var2, title, vmin=0, saveplot=False):
+def plot_heatmap(accuracy, var1, var2, title, lablesize=15, fontsize=18, vmin=0, saveplot=False, test_lmb=False):
     plt.figure(figsize=(8, 6))
     sns.heatmap(accuracy, annot=True, cmap="coolwarm", xticklabels=var2, yticklabels=var1, fmt='.3f', vmin=vmin)
     
     # Set original labels and title
-    if title == "GD" or title == "Momentum-GD":
+    if title == "GD" or title == "Momentum-GD" or test_lmb==True:
         plt.xlabel(r" Learning Rate, $\eta$ []", fontsize = lablesize)
         plt.ylabel(r" L2-penalty, $\lambda$ []", fontsize = lablesize)
     else:
@@ -1057,107 +1044,123 @@ def plot_heatmap(accuracy, var1, var2, title, vmin=0, saveplot=False):
 
 
 
-X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
-
-y = y.reshape(-1,1)
-
-"""
-MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-MLPGD.reset_weights()
-MLPGD.set_classification()
-
-MLPMomGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-MLPMomGD.reset_weights()
-MLPMomGD.set_classification()
-
-
-
-#Test to prove that lambda = 0 is the best
-eta_vals = np.logspace(-2, 0, 11)
-eta_vals = np.round(eta_vals, 2)
-lmbd_vals = np.logspace(-5-1, 0, 6+1)
-#add another value to lmbd_vals that is rewritten to zero
-lmbd_vals[0] = 0
-accuracy_listGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
-accuracy_listMomGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
-for i, eta in enumerate(eta_vals):
-    for j, lmbd in enumerate(lmbd_vals):
-        try:
-            accuracyGD = MLPGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'GD', scale_bool = True, tol = 1e-17)
-            accuracyMomGD = MLPMomGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
-            accuracy_listGD[i][j] = accuracyGD[0]
-            accuracy_listMomGD[i][j] = accuracyMomGD[0]
-            print(f"Eta: {eta}, lambda: {lmbd}, Accuracy (GD): {accuracyGD[0]:.4f}, Accuracy (MomGD): {accuracyMomGD[0]:.4f}")
-            MLPGD.reset_weights()
-            MLPMomGD.reset_weights()
-        except RuntimeWarning:
-            MLPGD.reset_weights()
-            MLPMomGD.reset_weights()
-            continue;  
+if __name__ == "__main__":
+    # ---------------- NOTES -------------------
+    # 
+    # figsize=(8,8)
+    #
+    # fontsize = fontsize
+    # 
+    # -------------------------------------------
     
-
-
-iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=False, vmin=0.85)
-iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=False, vmin = 0.85)
-"""
-
-
-#By inspecting these plots we determine the optimal lambda, which will be used in
-#RMSprop which we assume has the same optimal lambda.
-
-#After testing RMSprop the actual optimal lambda is 0
-
-
-
-#use RMSprop for training
-MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-MLP.reset_weights()
-MLP.set_classification()
-
-"""
-m_list = np.linspace(10, 100, 10)
-eta_vals = np.logspace(-3, -2, 11)
-eta_vals = np.round(eta_vals, 4)
-
-accuracy_list = np.zeros( (len(eta_vals), len(m_list)) )
-for i, eta in enumerate(eta_vals):
-    for j, m in enumerate(m_list):
-        try:
-            accuracy = MLP.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-            accuracy_list[i][j] = accuracy[0]
-            print(f"Eta: {eta}, m: {m}, Accuracy: {accuracy[0]:.5f}")
-            MLP.reset_weights()
-        except RuntimeWarning:
-            MLP.reset_weights()
-            continue;  
-
-i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=False)
-
-#By eye: best values: m=30, eta=0.0032
-"""
-
-
-
-final_accuracy = MLP.fit(X, y, n_batches=30, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-
-#The true positive, false positive etc. rates are the number of cases divided by
-#total cases. Therefore TP+TN+FP+FN=1
-#In the confusion matrix TP+FP=1 and TN+FN=1
-
-print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[1]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
-print('\n')
-
-y_pred = final_accuracy[-1]
-print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
-
-"""
-Only 0.280 percent of people who had cancer were missed by this model.
-This translates to 0.176 percent of the total number of cases being false negatives.
-Since the dataset contains 569 different cases, there was 1 person who had
-cancer that the model missed.
-On the other hand, 2 people who didn't have cancer got more stress than they
-had to. 
-
-As of 24.10.2024 this is miles ahead of the logistic regression version
-that had about a 90 percent total accuracy
-"""
+    fontsize = 18
+    figsize = (6,6)
+    lablesize = 15
+    
+    
+    
+    X, y = sklearn.datasets.load_breast_cancer(return_X_y=True, as_frame=False)
+    
+    y = y.reshape(-1,1)
+    
+    MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLPGD.reset_weights()
+    MLPGD.set_classification()
+    
+    MLPMomGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLPMomGD.reset_weights()
+    MLPMomGD.set_classification()
+    
+    
+    
+    #Test to prove that lambda = 0 is the best
+    eta_vals = np.logspace(-2, 0, 11)
+    eta_vals = np.round(eta_vals, 2)
+    lmbd_vals = np.logspace(-5-1, 0, 6+1)
+    #add another value to lmbd_vals that is rewritten to zero
+    lmbd_vals[0] = 0
+    accuracy_listGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
+    accuracy_listMomGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
+    for i, eta in enumerate(eta_vals):
+        for j, lmbd in enumerate(lmbd_vals):
+            try:
+                accuracyGD = MLPGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'GD', scale_bool = True, tol = 1e-17)
+                accuracyMomGD = MLPMomGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
+                accuracy_listGD[i][j] = accuracyGD[0]
+                accuracy_listMomGD[i][j] = accuracyMomGD[0]
+                print(f"Eta: {eta}, lambda: {lmbd}, Accuracy (GD): {accuracyGD[0]:.4f}, Accuracy (MomGD): {accuracyMomGD[0]:.4f}")
+                MLPGD.reset_weights()
+                MLPMomGD.reset_weights()
+            except RuntimeWarning:
+                MLPGD.reset_weights()
+                MLPMomGD.reset_weights()
+                continue;  
+        
+    
+    
+    iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=False, vmin=0.85)
+    iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=False, vmin = 0.85)
+    
+    
+    
+    #By inspecting these plots we determine the optimal lambda, which will be used in
+    #RMSprop which we assume has the same optimal lambda.
+    
+    #After testing RMSprop the actual optimal lambda is 0
+    
+    
+    
+    #use RMSprop for training
+    MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP.reset_weights()
+    MLP.set_classification()
+    
+    m_list = np.linspace(10, 100, 10)
+    eta_vals = np.logspace(-3, -2, 11)
+    eta_vals = np.round(eta_vals, 4)
+    
+    accuracy_list = np.zeros( (len(eta_vals), len(m_list)) )
+    for i, eta in enumerate(eta_vals):
+        for j, m in enumerate(m_list):
+            try:
+                accuracy = MLP.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_list[i][j] = accuracy[0]
+                print(f"Eta: {eta}, m: {m}, Accuracy: {accuracy[0]:.5f}")
+                MLP.reset_weights()
+            except RuntimeWarning:
+                MLP.reset_weights()
+                continue;  
+    
+    i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=False)
+    
+    #By eye: best values: m=30, eta=0.0032 (24.10.2024)
+    
+    
+    
+    final_accuracy = MLP.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+    
+    #The true positive, false positive etc. rates are the number of cases divided by
+    #total cases. Therefore TP+TN+FP+FN=1
+    #In the confusion matrix TP+FP=1 and TN+FN=1
+    
+    print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[2]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
+    print('\n')
+    
+    y_pred = final_accuracy[-1]
+    print(f"log_loss = {log_loss(y, y_pred)}")
+    print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
+    
+    """
+    Only 0.280 percent of people who had cancer were missed by this model.
+    This translates to 0.176 percent of the total number of cases being false negatives.
+    Since the dataset contains 569 different cases, there was 1 person who had
+    cancer that the model missed.
+    On the other hand, 2 people who didn't have cancer got more stress than they
+    had to. 
+    
+    As of 24.10.2024 this is miles ahead of the logistic regression version
+    that had about a 90 percent total accuracy
+    
+    25.10.2024: After some changes to RMSprop (I think that is the reason) the
+    possible models are better with some of them at 100% accuracy
+    """
