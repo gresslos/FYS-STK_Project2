@@ -1102,9 +1102,10 @@ if __name__ == "__main__":
     iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=False, vmin = 0.85)
     
     
-    
     #By inspecting these plots we determine the optimal lambda, which will be used in
     #RMSprop which we assume has the same optimal lambda.
+    #Momentum GD tells us that a very small lambda is optimal.
+    #Will choose 0 since it coincides with findings from other subtasks.
     
     #After testing RMSprop the actual optimal lambda is 0
     
@@ -1130,37 +1131,32 @@ if __name__ == "__main__":
             except RuntimeWarning:
                 MLP.reset_weights()
                 continue;  
+    print('\n')
     
     i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=False)
     
     #By eye: best values: m=30, eta=0.0032 (24.10.2024)
+    #By eye: best values: m=80, eta=0.0032 (25.10.2024)
+    #There are however MULTIPLE possible combinations with 100% accuracy
     
     
     
     final_accuracy = MLP.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
     
-    #The true positive, false positive etc. rates are the number of cases divided by
+    #The true positive, false positive etc. values from .fit() are the number of cases divided by
     #total cases. Therefore TP+TN+FP+FN=1
     #In the confusion matrix TP+FP=1 and TN+FN=1
+    print("When interpreting the confusion matrix: Benign (no cancer) = 1, Malignant (cancer) = 0")
+    print("Upper right: True=0, Predicted=0.   Upper left: True=0, Predicted=1")
+    print("Lower right: True=1, Predicted=0.   Lower left: True=1, Predicted=1")
+    print('\n')
     
+    print("Neural Network: m=80, n_batches=100, eta=0.0032, lambda=0")
     print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[2]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
     print('\n')
+    
+    
     
     y_pred = final_accuracy[-1]
     print(f"log_loss = {log_loss(y, y_pred)}")
     print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
-    
-    """
-    Only 0.280 percent of people who had cancer were missed by this model.
-    This translates to 0.176 percent of the total number of cases being false negatives.
-    Since the dataset contains 569 different cases, there was 1 person who had
-    cancer that the model missed.
-    On the other hand, 2 people who didn't have cancer got more stress than they
-    had to. 
-    
-    As of 24.10.2024 this is miles ahead of the logistic regression version
-    that had about a 90 percent total accuracy
-    
-    25.10.2024: After some changes to RMSprop (I think that is the reason) the
-    possible models are better with some of them at 100% accuracy
-    """
