@@ -115,6 +115,11 @@ class LogisticRegression:
 
 if __name__ == "__main__":
     
+    print("When interpreting the confusion matrix: Benign (no cancer) = 1, Malignant (cancer) = 0")
+    print("Upper right: True=0, Predicted=0.   Upper left: True=0, Predicted=1")
+    print("Lower right: True=1, Predicted=0.   Lower left: True=1, Predicted=1")
+    print('\n')
+    
     # ---------------- NOTES -------------------
     # 
     # figsize=(8,8)
@@ -139,11 +144,11 @@ if __name__ == "__main__":
     for i, eta in enumerate(eta_vals):
         for j, lmb in enumerate(lmbd_vals):
             try:
-                modelGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0.1, lam=lmb,
+                modelGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0, lam=lmb,
                                            num_iterations=1000, n_epochs=100, 
                                            m=10, overflow=True
                                            )
-                modelSGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0.1, lam=lmb,
+                modelSGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0, lam=lmb,
                                            num_iterations=1000, n_epochs=100, 
                                            m=10, overflow=True
                                            )
@@ -161,13 +166,14 @@ if __name__ == "__main__":
 
 
     
-    final_model = LogisticRegression(learning_rate=0.003981, t1=10, gamma=0.1, lam=1.99526231,
+    final_model = LogisticRegression(learning_rate=0.003981, t1=10, gamma=0, lam=1.99526231,
                                      num_iterations=1000, n_epochs=100, 
                                      m=10, overflow=True
                                      )
     
     final_model.SGDfit(X, y)
     final_predictions = final_model.predict(X)
+    print("Logistic Regression: eta=0.003981, lambda=1.99526231, t1=10, n_epochs=100, m=10")
     print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y, final_predictions):.3f}")
     print(f"log_loss = {log_loss(y, final_predictions):.3f}")
     print(f"Confusion Matrix = {confusion_matrix(y, final_predictions, normalize='true')}")
@@ -192,6 +198,7 @@ if __name__ == "__main__":
     y_predSK = logreg.predict(X)
     
     #from sklearn.preprocessing import LabelEncoder
+    print("Scikit-learn: No parameters to tune")
     print("Test set accuracy with Logistic Regression (Scikit-Learn) = {:.3f}".format(logreg.score(X, y)))
     print(f"log_loss = {log_loss(y, y_predSK):.3f}")
     print(f"Confusion Matrix = {confusion_matrix(y, y_predSK, normalize='true')}")
@@ -239,6 +246,7 @@ if __name__ == "__main__":
     
     accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000631, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
     y_predNN = accuracyNN[-1]
+    print("Neural Network without hidden layers: eta=15.848932, lambda = 0.000631, t1=10, n_epochs=100, m=10")
     print(f"Test set accuracy for Neural Network without hidden layers = {accuracy_score(y, y_predNN):.3f}")
     print(f"log_loss = {log_loss(y, y_predNN):.3f}")
     print(f"Confusion Matrix = {confusion_matrix(y, y_predNN, normalize='true')}")
