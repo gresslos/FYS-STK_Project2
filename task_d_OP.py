@@ -27,12 +27,15 @@ import warnings
 warnings.simplefilter("error")
 random.seed(2023)
 #---------------- Cost, activation functions (Lecture notes) -------------#
+
+"""
 def CostOLS(target):
     
     def func(X):
         return (1.0 / target.shape[0]) * np.sum((target - X) ** 2)
 
     return func
+"""
 
 
 def CostLogReg(target):
@@ -108,14 +111,6 @@ def derivate(func):
 
 
 #----------------------------- Testing functions for producing data ----------------------#
-
-def FrankeFunction(x,y):
-        term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
-        term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
-        term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
-        term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
-        return term1 + term2 + term3 + term4
-
 
 def Design_Matrix_2D(deg, X):
     # The number of polynomial terms for two variables (x, y) up to degree d is (d+1)(d+2)/2  
@@ -1081,14 +1076,14 @@ if __name__ == "__main__":
     lmbd_vals[0] = 0
     accuracy_listGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
     accuracy_listMomGD = np.zeros( (len(eta_vals), len(lmbd_vals)) )
-    for i, eta in enumerate(eta_vals):
+    for i, eta in tqdm(enumerate(eta_vals)):
+        print(f"eta number {i+1} of {len(eta_vals)}")
         for j, lmbd in enumerate(lmbd_vals):
             try:
                 accuracyGD = MLPGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0, method = 'GD', scale_bool = True, tol = 1e-17)
                 accuracyMomGD = MLPMomGD.fit(X, y, n_batches = 10, n_epochs = 100, eta = eta, lmb = lmbd, delta_mom = 0.9, method = 'GD', scale_bool = True, tol = 1e-17)
                 accuracy_listGD[i][j] = accuracyGD[0]
                 accuracy_listMomGD[i][j] = accuracyMomGD[0]
-                print(f"Eta: {eta}, lambda: {lmbd}, Accuracy (GD): {accuracyGD[0]:.4f}, Accuracy (MomGD): {accuracyMomGD[0]:.4f}")
                 MLPGD.reset_weights()
                 MLPMomGD.reset_weights()
             except RuntimeWarning:
@@ -1098,8 +1093,8 @@ if __name__ == "__main__":
         
     
     
-    iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=False, vmin=0.85)
-    iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=False, vmin = 0.85)
+    iGD, jGD = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, 'GD', saveplot=True, vmin=0.85)
+    iMomGD, jMomGD = plot_heatmap(accuracy_listMomGD.T, lmbd_vals, eta_vals, 'Momentum-GD', saveplot=True, vmin = 0.85)
     
     
     #By inspecting these plots we determine the optimal lambda, which will be used in
@@ -1107,39 +1102,97 @@ if __name__ == "__main__":
     #Momentum GD tells us that a very small lambda is optimal.
     #Will choose 0 since it coincides with findings from other subtasks.
     
-    #After testing RMSprop the actual optimal lambda is 0
+    #After testing RMSprop the actual optimal lambda is 0, as found in Mom GD plot
+    
+    
+    
+    hidden_nodes_vals = np.linspace(50, 150, 11)
+    activation_funcs = [sigmoid, softmax, RELU, LRELU]
+    act_funcs_labels = ['sigmoid', 'softmax', 'RELU', 'LRELU']
+    accuracy_list_config_test = np.zeros( (len(hidden_nodes_vals), len(activation_funcs)) )
+    for i, hidden in tqdm(enumerate(hidden_nodes_vals)):
+        print(f"Number of nodes in hidden layer value {i+1} of {len(hidden_nodes_vals)}")
+        for j, func in enumerate(activation_funcs):
+            try:
+                MLP_config_test = Network([30, int(hidden), 1], func, sigmoid, CostLogReg)
+                MLP_config_test.reset_weights()
+                MLP_config_test.set_classification()
+                #picked some values that we knew were good from analysis that happens later in the code
+                accuracy_config_test = MLP_config_test.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method='RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_list_config_test[i][j] = accuracy_config_test[0]
+            except RuntimeWarning:
+                continue
+    
+    
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(accuracy_list_config_test.T, annot=True, cmap="coolwarm", xticklabels=hidden_nodes_vals, yticklabels=act_funcs_labels, fmt='.3f')
+    plt.xlabel(r" # of nodes in hidden layer []", fontsize = lablesize)
+    plt.ylabel(r" Activation functions", fontsize = lablesize)
+    plt.title(f"Heatmap of accuracy values for RMSprop (network configurations)\n ", fontsize=fontsize)
+    plt.tight_layout()
+    plt.savefig("Additional_Plots/RMSprop_network_config_heatmap.png")
+    plt.show()
+    
+    
+    #According to this plot, we pick 100 nodes in hidden layer with LRELU activation
     
     
     
     #use RMSprop for training
-    MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-    MLP.reset_weights()
-    MLP.set_classification()
+    MLP_RMSprop = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_RMSprop.reset_weights()
+    MLP_RMSprop.set_classification()
+    
+    MLP_AdaGrad = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_AdaGrad.reset_weights()
+    MLP_AdaGrad.set_classification()
+    
+    MLP_ADAM = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_ADAM.reset_weights()
+    MLP_ADAM.set_classification()
     
     m_list = np.linspace(10, 100, 10)
-    eta_vals = np.logspace(-3, -2, 11)
-    eta_vals = np.round(eta_vals, 4)
+    #eta_vals = np.logspace(-3, -2, 11)
+    eta_vals = np.logspace(-5, 2, 11)
+    #eta_vals = np.logspace(eta_vals, 3)
+    eta_vals = np.round(eta_vals, 5)
     
-    accuracy_list = np.zeros( (len(eta_vals), len(m_list)) )
-    for i, eta in enumerate(eta_vals):
+    accuracy_list_RMSprop = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_AdaGrad = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_ADAM = np.zeros( (len(eta_vals), len(m_list)) )
+    for i, eta in tqdm(enumerate(eta_vals)):
+        print(f"eta number {i+1} of {len(eta_vals)}")
         for j, m in enumerate(m_list):
             try:
-                accuracy = MLP.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-                accuracy_list[i][j] = accuracy[0]
-                print(f"Eta: {eta}, m: {m}, Accuracy: {accuracy[0]:.5f}")
-                MLP.reset_weights()
+                accuracy_RMSprop = MLP_RMSprop.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_AdaGrad = MLP_AdaGrad.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'AdaGrad', scale_bool = True, tol = 1e-17)
+                accuracy_ADAM = MLP_ADAM.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'ADAM', scale_bool = True, tol = 1e-17)
+                accuracy_list_RMSprop[i][j] = accuracy_RMSprop[0]
+                accuracy_list_AdaGrad[i][j] = accuracy_AdaGrad[0]
+                accuracy_list_ADAM[i][j] = accuracy_ADAM[0]
+                MLP_RMSprop.reset_weights()
+                MLP_AdaGrad.reset_weights()
+                MLP_ADAM.reset_weights()
             except RuntimeWarning:
-                MLP.reset_weights()
+                MLP_RMSprop.reset_weights()
+                MLP_AdaGrad.reset_weights()
+                MLP_ADAM.reset_weights()
                 continue;  
     print('\n')
     
-    i_max, j_max = plot_heatmap(accuracy_list.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=False)
+    iRMSprop_max, jRMSprop_max = plot_heatmap(accuracy_list_RMSprop.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=True)
+    iAdaGrad_max, jAdaGrad_max = plot_heatmap(accuracy_list_AdaGrad.T, m_list, eta_vals, title='AdaGrad', vmin=0.95, saveplot=True)
+    iADAM_max, jADAM_max = plot_heatmap(accuracy_list_ADAM.T, m_list, eta_vals, title='ADAM', vmin=0.95, saveplot=True)
     
     #By eye: best values: m=30, eta=0.0032 (24.10.2024)
-    #By eye: best values: m=80, eta=0.0032 (25.10.2024)
+    #By eye: best values: m=80, eta=0.0032 (25.10.2024, after changes to stochastic part)
     #There are however MULTIPLE possible combinations with 100% accuracy
     
     
+    
+    MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP.reset_weights()
+    MLP.set_classification()
     
     final_accuracy = MLP.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
     
