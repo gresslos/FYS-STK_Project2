@@ -402,7 +402,7 @@ class Network(object):
             y_batch = shuffled_targets[i*M:(i+1)*M]
             minibatches.append((X_batch, y_batch))
 
-        return minibatches
+        return minibatches, shuffled_inputs, shuffled_targets
  
     
     def scaletraining (self, x, y):
@@ -596,7 +596,7 @@ class Network(object):
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
 
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled_shuffled, y_scaled_shuffled = self.split_mini_batches(n_batches, x_scaled, y_scaled)
 
         t0 = 1  # Arbitrary t0
         """
@@ -620,8 +620,8 @@ class Network(object):
 
                 # Choose a minibatch and calculate gradients
                 if i == n_batches - 1:
-                    X_batch = x_scaled[i * M:, :]
-                    y_batch = y_scaled[i * M:, :]
+                    X_batch = x_scaled_shuffled[i * M:, :]
+                    y_batch = y_scaled_shuffled[i * M:, :]
                 else:
                     X_batch = minibatches[i][0]
                     y_batch = minibatches[i][1]
@@ -690,9 +690,10 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         if SGD_bool:
             n_batches = int(n_batches)
-            minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+            minibatches, x_scaled_shuffled, y_scaled_shuffled = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         else:
             n_batches = 1
+            x_scaled_shuffled, y_scaled_shuffled = x_scaled, y_scaled
         M = X.shape[0] // n_batches
     # ---------------------------------------------------
     
@@ -707,8 +708,8 @@ class Network(object):
             for i in range(n_batches):
                 # Process each minibatch
                 if i == n_batches - 1:
-                    X_batch = x_scaled[i * M:, :]
-                    y_batch = y_scaled[i * M:, :]
+                    X_batch = x_scaled_shuffled[i * M:, :]
+                    y_batch = y_scaled_shuffled[i * M:, :]
                 else:
                     X_batch = minibatches[i][0]
                     y_batch = minibatches[i][1]
@@ -788,7 +789,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled_shuffled, y_scaled_shuffled = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         # ---------------------------------------------------
 
         # Initialize accumulated squared gradients
@@ -802,8 +803,8 @@ class Network(object):
             for i in range(n_batches):
                 # Process each minibatch
                 if i == n_batches - 1:
-                    X_batch = x_scaled[i * M:, :]
-                    y_batch = y_scaled[i * M:, :]
+                    X_batch = x_scaled_shuffled[i * M:, :]
+                    y_batch = y_scaled_shuffled[i * M:, :]
                 else:
                     X_batch = minibatches[i][0]
                     y_batch = minibatches[i][1]
@@ -878,7 +879,7 @@ class Network(object):
         # ----------------- SGD - parameters ---------------
         n_batches = int(n_batches)
         M = X.shape[0] // n_batches
-        minibatches = self.split_mini_batches(n_batches, x_scaled, y_scaled)
+        minibatches, x_scaled_shuffled, y_scaled_shuffled = self.split_mini_batches(n_batches, x_scaled, y_scaled)
         # -------------------------------------------------
         
         s_biases = [np.zeros(i.shape) for i in self.biases]
@@ -893,8 +894,8 @@ class Network(object):
             for i in range(n_batches):
                 # Select the minibatch
                 if i == n_batches - 1:
-                    X_batch = x_scaled[i * M :, :]
-                    y_batch = y_scaled[i * M :, :]
+                    X_batch = x_scaled_shuffled[i * M :, :]
+                    y_batch = y_scaled_shuffled[i * M :, :]
                 else:
                     X_batch = minibatches[i][0]
                     y_batch = minibatches[i][1]
