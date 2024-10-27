@@ -1118,7 +1118,7 @@ if __name__ == "__main__":
                 MLP_config_test.reset_weights()
                 MLP_config_test.set_classification()
                 #picked some values that we knew were good from analysis that happens later in the code
-                accuracy_config_test = MLP_config_test.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method='RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_config_test = MLP_config_test.fit(X, y, n_batches=32, n_epochs=100, eta=0.001, lmb=0, delta_mom=0, method='RMSprop', scale_bool = True, tol = 1e-17)
                 accuracy_list_config_test[i][j] = accuracy_config_test[0]
             except RuntimeWarning:
                 continue
@@ -1134,22 +1134,35 @@ if __name__ == "__main__":
     plt.show()
     
     
-    #According to this plot, we pick 100 nodes in hidden layer with LRELU activation
+    #Used m=32 and eta=0.001
+    #According to this plot, we pick 100 nodes in hidden layer with RELU activation
     
     
     
     #use RMSprop for training
-    MLP_RMSprop = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-    MLP_RMSprop.reset_weights()
-    MLP_RMSprop.set_classification()
+    MLP_RMSprop1 = Network([30,100,1], RELU, sigmoid, CostLogReg)
+    MLP_RMSprop1.reset_weights()
+    MLP_RMSprop1.set_classification()
     
-    MLP_AdaGrad = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-    MLP_AdaGrad.reset_weights()
-    MLP_AdaGrad.set_classification()
+    MLP_AdaGrad1 = Network([30,100,1], RELU, sigmoid, CostLogReg)
+    MLP_AdaGrad1.reset_weights()
+    MLP_AdaGrad1.set_classification()
     
-    MLP_ADAM = Network([30,100,1], LRELU, sigmoid, CostLogReg)
-    MLP_ADAM.reset_weights()
-    MLP_ADAM.set_classification()
+    MLP_ADAM1 = Network([30,100,1], RELU, sigmoid, CostLogReg)
+    MLP_ADAM1.reset_weights()
+    MLP_ADAM1.set_classification()
+    
+    MLP_RMSprop2 = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_RMSprop2.reset_weights()
+    MLP_RMSprop2.set_classification()
+    
+    MLP_AdaGrad2 = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_AdaGrad2.reset_weights()
+    MLP_AdaGrad2.set_classification()
+    
+    MLP_ADAM2 = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP_ADAM2.reset_weights()
+    MLP_ADAM2.set_classification()
     
     m_list = np.linspace(10, 100, 10)
     #eta_vals = np.logspace(-3, -2, 11)
@@ -1157,32 +1170,56 @@ if __name__ == "__main__":
     #eta_vals = np.logspace(eta_vals, 3)
     eta_vals = np.round(eta_vals, 5)
     
-    accuracy_list_RMSprop = np.zeros( (len(eta_vals), len(m_list)) )
-    accuracy_list_AdaGrad = np.zeros( (len(eta_vals), len(m_list)) )
-    accuracy_list_ADAM = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_RMSprop1 = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_AdaGrad1 = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_ADAM1    = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_RMSprop2 = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_AdaGrad2 = np.zeros( (len(eta_vals), len(m_list)) )
+    accuracy_list_ADAM2    = np.zeros( (len(eta_vals), len(m_list)) )
+    
     for i, eta in tqdm(enumerate(eta_vals)):
         print(f"eta number {i+1} of {len(eta_vals)}")
         for j, m in enumerate(m_list):
             try:
-                accuracy_RMSprop = MLP_RMSprop.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
-                accuracy_AdaGrad = MLP_AdaGrad.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'AdaGrad', scale_bool = True, tol = 1e-17)
-                accuracy_ADAM = MLP_ADAM.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'ADAM', scale_bool = True, tol = 1e-17)
-                accuracy_list_RMSprop[i][j] = accuracy_RMSprop[0]
-                accuracy_list_AdaGrad[i][j] = accuracy_AdaGrad[0]
-                accuracy_list_ADAM[i][j] = accuracy_ADAM[0]
-                MLP_RMSprop.reset_weights()
-                MLP_AdaGrad.reset_weights()
-                MLP_ADAM.reset_weights()
+                accuracy_RMSprop1 = MLP_RMSprop1.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_AdaGrad1 = MLP_AdaGrad1.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'Adagrad', scale_bool = True, tol = 1e-17)
+                accuracy_ADAM1    = MLP_ADAM1.fit(X, y,    n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'Adam',    scale_bool = True, tol = 1e-17)
+                accuracy_list_RMSprop1[i][j] = accuracy_RMSprop1[0]
+                accuracy_list_AdaGrad1[i][j] = accuracy_AdaGrad1[0]
+                accuracy_list_ADAM1[i][j]    = accuracy_ADAM1[0]
+                MLP_RMSprop1.reset_weights()
+                MLP_AdaGrad1.reset_weights()
+                MLP_ADAM1.reset_weights()
+                
+                accuracy_RMSprop2 = MLP_RMSprop2.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+                accuracy_AdaGrad2 = MLP_AdaGrad2.fit(X, y, n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'Adagrad', scale_bool = True, tol = 1e-17)
+                accuracy_ADAM2    = MLP_ADAM2.fit(X, y,    n_batches = m, n_epochs = 100, eta = eta, lmb = 0, delta_mom = 0, method = 'Adam',    scale_bool = True, tol = 1e-17)
+                accuracy_list_RMSprop2[i][j] = accuracy_RMSprop2[0]
+                accuracy_list_AdaGrad2[i][j] = accuracy_AdaGrad2[0]
+                accuracy_list_ADAM2[i][j]    = accuracy_ADAM2[0]
+                MLP_RMSprop2.reset_weights()
+                MLP_AdaGrad2.reset_weights()
+                MLP_ADAM2.reset_weights()
+                
             except RuntimeWarning:
-                MLP_RMSprop.reset_weights()
-                MLP_AdaGrad.reset_weights()
-                MLP_ADAM.reset_weights()
+                MLP_RMSprop1.reset_weights()
+                MLP_AdaGrad1.reset_weights()
+                MLP_ADAM1.reset_weights()
+                
+                MLP_RMSprop2.reset_weights()
+                MLP_AdaGrad2.reset_weights()
+                MLP_ADAM2.reset_weights()
+                
                 continue;  
     print('\n')
     
-    iRMSprop_max, jRMSprop_max = plot_heatmap(accuracy_list_RMSprop.T, m_list, eta_vals, title='RMSprop', vmin=0.95, saveplot=True)
-    iAdaGrad_max, jAdaGrad_max = plot_heatmap(accuracy_list_AdaGrad.T, m_list, eta_vals, title='AdaGrad', vmin=0.95, saveplot=True)
-    iADAM_max, jADAM_max = plot_heatmap(accuracy_list_ADAM.T, m_list, eta_vals, title='ADAM', vmin=0.95, saveplot=True)
+    iRMSprop1_max, jRMSprop1_max = plot_heatmap(accuracy_list_RMSprop1.T, m_list, eta_vals, title='RMSprop (ReLU)', vmin=0.95, saveplot=True)
+    iAdaGrad1_max, jAdaGrad1_max = plot_heatmap(accuracy_list_AdaGrad1.T, m_list, eta_vals, title='AdaGrad (ReLU)', vmin=0.95, saveplot=True)
+    iADAM1_max, jADAM1_max       = plot_heatmap(accuracy_list_ADAM1.T,    m_list, eta_vals, title='ADAM (ReLU)',    vmin=0.95, saveplot=True)
+    
+    iRMSprop2_max, jRMSprop2_max = plot_heatmap(accuracy_list_RMSprop2.T, m_list, eta_vals, title='RMSprop (LReLU)', vmin=0.95, saveplot=True)
+    iAdaGrad2_max, jAdaGrad2_max = plot_heatmap(accuracy_list_AdaGrad2.T, m_list, eta_vals, title='AdaGrad (LReLU)', vmin=0.95, saveplot=True)
+    iADAM2_max, jADAM2_max       = plot_heatmap(accuracy_list_ADAM2.T,    m_list, eta_vals, title='ADAM (LReLU)',    vmin=0.95, saveplot=True)
     
     #By eye: best values: m=30, eta=0.0032 (24.10.2024)
     #By eye: best values: m=80, eta=0.0032 (25.10.2024, after changes to stochastic part)
@@ -1190,11 +1227,11 @@ if __name__ == "__main__":
     
     
     
-    MLP = Network([30,100,1], LRELU, sigmoid, CostLogReg)
+    MLP = Network([30,100,1], RELU, sigmoid, CostLogReg)
     MLP.reset_weights()
     MLP.set_classification()
     
-    final_accuracy = MLP.fit(X, y, n_batches=80, n_epochs=100, eta=0.0032, lmb=0, delta_mom=0, method = 'RMSprop', scale_bool = True, tol = 1e-17)
+    final_accuracy = MLP.fit(X, y, n_batches=10, n_epochs=100, eta=0.03162, lmb=0, delta_mom=0, method = 'Adam', scale_bool = True, tol = 1e-17)
     
     #The true positive, false positive etc. values from .fit() are the number of cases divided by
     #total cases. Therefore TP+TN+FP+FN=1
@@ -1204,7 +1241,7 @@ if __name__ == "__main__":
     print("Lower right: True=1, Predicted=0.   Lower left: True=1, Predicted=1")
     print('\n')
     
-    print("Neural Network: m=80, n_batches=100, eta=0.0032, lambda=0")
+    print("Neural Network: ADAM, m=10, n_epochs=100, eta=0.03162, lambda=0")
     print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[2]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
     print('\n')
     
