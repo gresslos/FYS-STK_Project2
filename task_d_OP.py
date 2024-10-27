@@ -1153,7 +1153,7 @@ if __name__ == "__main__":
     
     m_list = np.linspace(10, 100, 10)
     #eta_vals = np.logspace(-3, -2, 11)
-    eta_vals = np.logspace(-5, 2, 11)
+    eta_vals = np.logspace(-5, 0, 11)
     #eta_vals = np.logspace(eta_vals, 3)
     eta_vals = np.round(eta_vals, 5)
     
