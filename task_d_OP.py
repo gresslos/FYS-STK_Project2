@@ -1058,6 +1058,7 @@ if __name__ == "__main__":
     
     y = y.reshape(-1,1)
     
+    """
     MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
     MLPGD.reset_weights()
     MLPGD.set_classification()
@@ -1103,7 +1104,7 @@ if __name__ == "__main__":
     #Will choose 0 since it coincides with findings from other subtasks.
     
     #After testing RMSprop the actual optimal lambda is 0, as found in Mom GD plot
-    
+    """
     
     
     hidden_nodes_vals = np.linspace(50, 150, 11)
@@ -1128,9 +1129,9 @@ if __name__ == "__main__":
     sns.heatmap(accuracy_list_config_test.T, annot=True, cmap="coolwarm", xticklabels=hidden_nodes_vals, yticklabels=act_funcs_labels, fmt='.3f')
     plt.xlabel(r" # of nodes in hidden layer []", fontsize = lablesize)
     plt.ylabel(r" Activation functions", fontsize = lablesize)
-    plt.title(f"Heatmap of accuracy values for RMSprop (network configurations)\n ", fontsize=fontsize)
-    plt.tight_layout()
-    plt.savefig("Additional_Plots/RMSprop_network_config_heatmap.png")
+    plt.title(f"Heatmap of acc. values for RMSprop (network config.)\n ", fontsize=fontsize)
+    #plt.tight_layout()
+    plt.savefig("Additional_Plots/RMSprop_network_config_heatmap.png", pad_inches=0.5)
     plt.show()
     
     
@@ -1139,7 +1140,7 @@ if __name__ == "__main__":
     
     
     
-    #use RMSprop for training
+    """
     MLP_RMSprop1 = Network([30,100,1], RELU, sigmoid, CostLogReg)
     MLP_RMSprop1.reset_weights()
     MLP_RMSprop1.set_classification()
@@ -1250,3 +1251,4 @@ if __name__ == "__main__":
     y_pred = final_accuracy[-1]
     print(f"log_loss = {log_loss(y, y_pred)}")
     print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
+    """
