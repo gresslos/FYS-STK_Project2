@@ -1037,6 +1037,37 @@ def plot_heatmap(accuracy, var1, var2, title, lablesize=15, fontsize=18, vmin=0,
 
 
 
+def plot_confusion_matrix(y, y_pred, method_name, eta, m, lmd, act_func_name='deez nuts', num_nodes=-1, hidden_layers=1, logreg_plot=False, no_subtitle=False):
+    # Confusion matrix data
+    confusion = confusion_matrix(y, y_pred, normalize='true')
+    
+    fontsize = 18
+    figsize = (6,6)
+    lablesize = 15
+      
+    # Create the plot
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(confusion, annot=True, fmt='.3f', cmap='Blues', cbar=False, 
+                xticklabels=['Malignant', 'Benign'], yticklabels=['Malignant', 'Benign'], ax=ax)
+    
+    # Main title
+    plt.suptitle(f"Confusion Matrix - {method_name}", fontsize=fontsize)
+    
+    # Smaller subtitle
+    if (logreg_plot == True) and (no_subtitle == False):
+        ax.set_title(f"$\\eta$ = {eta}, $m$ = {m}, $\\lambda$ = {lmd}", fontsize=lablesize - 5 )
+    if (logreg_plot == False) and (no_subtitle == False):
+        ax.set_title(f"$\\eta$ = {eta}, $m$ = {m}, Activation Func. = {act_func_name} \n # nodes = {num_nodes}, # hidden layers = {hidden_layers}, $\\lambda$ = {lmd}", fontsize=lablesize - 5 )#, loc='center', pad=20)
+    
+    ax.set_xlabel("Predicted Label", fontsize=lablesize)
+    ax.set_ylabel("True Label", fontsize=lablesize)
+    
+    # Display the plot
+    plt.tight_layout()
+    plt.savefig("Additional_Plots/" + method_name + "_confusion_matrix.png")
+    plt.show()
+
+
 
 
 if __name__ == "__main__":
@@ -1058,7 +1089,6 @@ if __name__ == "__main__":
     
     y = y.reshape(-1,1)
     
-    """
     MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
     MLPGD.reset_weights()
     MLPGD.set_classification()
@@ -1104,7 +1134,7 @@ if __name__ == "__main__":
     #Will choose 0 since it coincides with findings from other subtasks.
     
     #After testing RMSprop the actual optimal lambda is 0, as found in Mom GD plot
-    """
+    
     
     
     hidden_nodes_vals = np.linspace(50, 150, 11)
@@ -1140,7 +1170,6 @@ if __name__ == "__main__":
     
     
     
-    """
     MLP_RMSprop1 = Network([30,100,1], RELU, sigmoid, CostLogReg)
     MLP_RMSprop1.reset_weights()
     MLP_RMSprop1.set_classification()
@@ -1249,6 +1278,5 @@ if __name__ == "__main__":
     
     
     y_pred = final_accuracy[-1]
-    print(f"log_loss = {log_loss(y, y_pred)}")
-    print(f"Confusion Matrix = {confusion_matrix(y, y_pred, normalize='true')}")
-    """
+    print(f"log_loss = {log_loss(y, y_pred):.3f}")
+    plot_confusion_matrix(y, y_pred, 'ADAM', eta=0.03162, m=10, lmd=0, act_func_name='ReLU', num_nodes=100)
