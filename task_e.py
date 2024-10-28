@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
 from sklearn.model_selection import  train_test_split 
@@ -130,9 +131,9 @@ def plot_confusion_matrix(y, y_pred, method_name, eta, m, lmd, t1=10, act_func_n
     
     # Smaller subtitle
     if (logreg_plot == True) and (no_subtitle == False):
-        ax.set_title(f"$\\eta$ = {eta}, $m$ = {m}, $\\lambda$ = {lmd}, $t_1$ = {t1}", fontsize=lablesize - 5 )
+        ax.set_title(f"$\\eta$ = {eta:.4f}, $m$ = {m}, $\\lambda$ = {lmd:.4f}, $t_1$ = {t1}", fontsize=lablesize - 5 )
     if (logreg_plot == False) and (no_subtitle == False):
-        ax.set_title(f"$\\eta$ = {eta}, $m$ = {m}, $t_1$ = {t1}, Activation Func. = {act_func_name} \n # nodes = {num_nodes}, # hidden layers = {hidden_layers}, $\\lambda$ = {lmd}", fontsize=lablesize - 5 )#, loc='center', pad=20)
+        ax.set_title(f"$\\eta$ = {eta:.4f}, $m$ = {m}, $t_1$ = {t1}, Activation Func. = {act_func_name} \n # nodes = {num_nodes}, # hidden layers = {hidden_layers}, $\\lambda$ = {lmd:.4f}", fontsize=lablesize - 5 )#, loc='center', pad=20)
     
     ax.set_xlabel("Predicted Label", fontsize=lablesize)
     ax.set_ylabel("True Label", fontsize=lablesize)
@@ -276,9 +277,9 @@ if __name__ == "__main__":
     iNN_max, jNN_max = plot_heatmap(accuracy_listNN.T, lmbd_vals, eta_vals, title='Stochastic GD (NN-LR)', vmin=0.8, saveplot=True, test_lmb=True)
     
     
-    accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000631, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
+    accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000316, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
     y_predNN = accuracyNN[-1]
-    print("Neural Network without hidden layers: eta=15.848932, lambda = 0.000631, t1=10, n_epochs=100, m=10")
+    print("Neural Network without hidden layers: eta=15.848932, lambda = 0.000316, t1=10, n_epochs=100, m=10")
     print(f"Test set accuracy for Neural Network without hidden layers = {accuracy_score(y, y_predNN):.3f}")
     print(f"log_loss = {log_loss(y, y_predNN):.3f}")
-    plot_confusion_matrix(y, y_predNN, 'SGD (NN-LogReg)', eta=15.848932, m=10, lmd=0.000631, hidden_layers=0, act_func_name='N/A', num_nodes='N/A')
+    plot_confusion_matrix(y, y_predNN, 'SGD (NN-LogReg)', eta=15.848932, m=10, lmd=0.000316, hidden_layers=0, act_func_name='N/A', num_nodes='N/A')
