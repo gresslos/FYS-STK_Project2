@@ -1,7 +1,9 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
 from sklearn.model_selection import  train_test_split 
+import seaborn as sns
 
 from task_d_OP import plot_heatmap, Network, CostLogReg, sigmoid
 
@@ -107,8 +109,39 @@ class LogisticRegression:
         else:
             y_predicted = self.sigmoid2(linear_model)
         
-        return [1 if i >= 0.5 else 0 for i in y_predicted]
+        return np.array([1 if i >= 0.5 else 0 for i in y_predicted])
 
+
+
+def plot_confusion_matrix(y, y_pred, method_name, eta, m, lmd, t1=10, act_func_name='deez nuts', num_nodes=-1, hidden_layers=1, logreg_plot=False, no_subtitle=False):
+    # Confusion matrix data
+    confusion = confusion_matrix(y, y_pred, normalize='true')
+    
+    fontsize = 18
+    figsize = (6,6)
+    lablesize = 15
+      
+    # Create the plot
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(confusion, annot=True, fmt='.3f', cmap='Blues', cbar=False, 
+                xticklabels=['Malignant', 'Benign'], yticklabels=['Malignant', 'Benign'], ax=ax)
+    
+    # Main title
+    plt.suptitle(f"Confusion Matrix - {method_name}", fontsize=fontsize)
+    
+    # Smaller subtitle
+    if (logreg_plot == True) and (no_subtitle == False):
+        ax.set_title(f"$\\eta$ = {eta:.4f}, $m$ = {m}, $\\lambda$ = {lmd:.4f}, $t_1$ = {t1}", fontsize=lablesize - 5 )
+    if (logreg_plot == False) and (no_subtitle == False):
+        ax.set_title(f"$\\eta$ = {eta:.4f}, $m$ = {m}, $t_1$ = {t1}, Activation Func. = {act_func_name} \n # nodes = {num_nodes}, # hidden layers = {hidden_layers}, $\\lambda$ = {lmd:.4f}", fontsize=lablesize - 5 )#, loc='center', pad=20)
+    
+    ax.set_xlabel("Predicted Label", fontsize=lablesize)
+    ax.set_ylabel("True Label", fontsize=lablesize)
+    
+    # Display the plot
+    plt.tight_layout()
+    plt.savefig("Additional_Plots/" + method_name + "_confusion_matrix.png")
+    plt.show()
 
 
 
@@ -172,11 +205,13 @@ if __name__ == "__main__":
                                      )
     
     final_model.SGDfit(X, y)
-    final_predictions = final_model.predict(X)
+    y_predLG = final_model.predict(X)
     print("Logistic Regression: eta=0.003981, lambda=1.99526231, t1=10, n_epochs=100, m=10")
-    print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y, final_predictions):.3f}")
-    print(f"log_loss = {log_loss(y, final_predictions):.3f}")
-    print(f"Confusion Matrix = {confusion_matrix(y, final_predictions, normalize='true')}")
+    print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y, y_predLG):.3f}")
+    print(f"log_loss = {log_loss(y, y_predLG):.3f}")
+    y = y.reshape(-1, 1)
+    y_predLG = y_predLG.reshape(-1, 1)
+    plot_confusion_matrix(y, y_predLG, 'SGD (LogReg)', eta=0.003981, m=10, lmd=1.99526231, logreg_plot=True)
     print('\n')
 
 
@@ -201,7 +236,7 @@ if __name__ == "__main__":
     print("Scikit-learn: No parameters to tune")
     print("Test set accuracy with Logistic Regression (Scikit-Learn) = {:.3f}".format(logreg.score(X, y)))
     print(f"log_loss = {log_loss(y, y_predSK):.3f}")
-    print(f"Confusion Matrix = {confusion_matrix(y, y_predSK, normalize='true')}")
+    plot_confusion_matrix(y, y_predSK, 'SK-learn LogReg', eta=-1, m=-1, lmd=-1, no_subtitle=True)
     print('\n')
 
 
@@ -220,8 +255,6 @@ if __name__ == "__main__":
     MLP = Network(sizes=[30,1], hiddenact=linear, outputact=sigmoid, costfunc=CostLogReg)
     MLP.reset_weights()
     MLP.set_classification()
-    
-    y = y.reshape(-1,1)
     
     eta_vals = np.logspace(-2, 2, 11)
     eta_vals = np.round(eta_vals, 6)
@@ -244,9 +277,9 @@ if __name__ == "__main__":
     iNN_max, jNN_max = plot_heatmap(accuracy_listNN.T, lmbd_vals, eta_vals, title='Stochastic GD (NN-LR)', vmin=0.8, saveplot=True, test_lmb=True)
     
     
-    accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000631, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
+    accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000316, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
     y_predNN = accuracyNN[-1]
-    print("Neural Network without hidden layers: eta=15.848932, lambda = 0.000631, t1=10, n_epochs=100, m=10")
+    print("Neural Network without hidden layers: eta=15.848932, lambda = 0.000316, t1=10, n_epochs=100, m=10")
     print(f"Test set accuracy for Neural Network without hidden layers = {accuracy_score(y, y_predNN):.3f}")
     print(f"log_loss = {log_loss(y, y_predNN):.3f}")
-    print(f"Confusion Matrix = {confusion_matrix(y, y_predNN, normalize='true')}")
+    plot_confusion_matrix(y, y_predNN, 'SGD (NN-LogReg)', eta=15.848932, m=10, lmd=0.000316, hidden_layers=0, act_func_name='N/A', num_nodes='N/A')
