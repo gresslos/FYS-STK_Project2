@@ -17,7 +17,7 @@
 - **Input Variables**:
   - `X`, `y`, `beta0`: Design Matrix, data point, regression coefficent respectivly
   - `Niter`, `n_epochs`, `m`, `eta / eta0`, `lmb`, `tol`: Hyperparameters
-  - bool-values: Defined under __main__ == "__main__" describe if want or not want given property
+  - bool-values: Defined under `__main__ == "__main__"` describe if want or not want given property
     - **Note**: To swich between analytical cost function gradient change `want_Autograd` (line 532).
 - **Structure**: Detailed structure provided in `Project2.tex`.
 
