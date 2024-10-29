@@ -8,7 +8,7 @@
 - `task_d_OP.py`                        :  **Write here**
 - `task_e.py`                           :  **Write here**
 - Additional_Plots/Linear_Regression    : Include plots from `task_a.py`, `task b c.py` and `task b c tensorflow comparison.py`
-- Additional_Plots/Linear_Regression    : Include plots from `task_d_OP.py` and `task_e.py`
+- Additional_Plots/Classification       : Include plots from `task_d_OP.py` and `task_e.py`
 
   
 
