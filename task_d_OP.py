@@ -1089,7 +1089,6 @@ if __name__ == "__main__":
     
     y = y.reshape(-1,1)
     
-    """
     MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
     MLPGD.reset_weights()
     MLPGD.set_classification()
@@ -1134,7 +1133,7 @@ if __name__ == "__main__":
     #Momentum GD tells us that a very small lambda is optimal.
     #Will choose 0 since it coincides with findings from other subtasks.
     
-    #After testing RMSprop the actual optimal lambda is 0, as found in Mom GD plot
+    #After testing RMSprop a bit the actual optimal lambda seems to be 0, as found in Mom GD plot
     
     
     
@@ -1255,7 +1254,7 @@ if __name__ == "__main__":
     #By eye: best values: m=30, eta=0.0032 (24.10.2024)
     #By eye: best values: m=80, eta=0.0032 (25.10.2024, after changes to stochastic part)
     #There are however MULTIPLE possible combinations with 100% accuracy
-    """
+    
     
     
     MLP = Network([30,100,1], RELU, sigmoid, CostLogReg)
@@ -1267,6 +1266,7 @@ if __name__ == "__main__":
     #The true positive, false positive etc. values from .fit() are the number of cases divided by
     #total cases. Therefore TP+TN+FP+FN=1
     #In the confusion matrix TP+FP=1 and TN+FN=1
+    #Positive means 1 which means benign (no cancer)
     print("When interpreting the confusion matrix: Benign (no cancer) = 1, Malignant (cancer) = 0")
     print("Upper right: True=0, Predicted=0.   Upper left: True=0, Predicted=1")
     print("Lower right: True=1, Predicted=0.   Lower left: True=1, Predicted=1")
