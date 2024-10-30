@@ -1089,6 +1089,7 @@ if __name__ == "__main__":
     
     y = y.reshape(-1,1)
     
+    """
     MLPGD = Network([30,100,1], LRELU, sigmoid, CostLogReg)
     MLPGD.reset_weights()
     MLPGD.set_classification()
@@ -1254,7 +1255,7 @@ if __name__ == "__main__":
     #By eye: best values: m=30, eta=0.0032 (24.10.2024)
     #By eye: best values: m=80, eta=0.0032 (25.10.2024, after changes to stochastic part)
     #There are however MULTIPLE possible combinations with 100% accuracy
-    
+    """
     
     
     MLP = Network([30,100,1], RELU, sigmoid, CostLogReg)
@@ -1273,10 +1274,24 @@ if __name__ == "__main__":
     
     print("Neural Network: ADAM, m=10, n_epochs=100, eta=0.03162, lambda=0")
     print(f"Accuracy: {final_accuracy[0]:.3f}, TP: {final_accuracy[1]:.3f}, TN: {final_accuracy[2]:.3f}, FP: {final_accuracy[3]:.3f}, FN: {final_accuracy[4]:.3f}")
-    print('\n')
-    
-    
     
     y_pred = final_accuracy[-1]
     print(f"log_loss = {log_loss(y, y_pred):.3f}")
+    print('\n')
     plot_confusion_matrix(y, y_pred, 'ADAM', eta=0.03162, m=10, lmd=0, act_func_name='ReLU', num_nodes=100)
+    
+    
+    
+    from sklearn.neural_network import MLPClassifier
+    
+    y = y.flatten()
+    clf = MLPClassifier(max_iter=10000)
+    clf.fit(X, y)
+    y_predSKNN = clf.predict(X)
+    accuracySKNN = clf.score(X, y)
+    
+    print("Neural Network (Scikit learn), all default values")
+    print(f"Accuracy: {accuracySKNN:.3f}")
+    print(f"log_loss = {log_loss(y, y_predSKNN):.3f}")
+    plot_confusion_matrix(y, y_predSKNN, 'SK-learn NN', eta=-1, m=-1, lmd=-1, no_subtitle='True')
+    print('\n')
