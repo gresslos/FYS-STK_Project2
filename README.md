@@ -5,9 +5,8 @@
 - `Network_implementation.py`           :  Contains both the latest version of our Neural Network class and also a function for constructing a TensorFlow equivalent
 - `task b c.py`                         :  Plots for the use of neural networks for regression tasks. The kind of analysis performed by the program is decided by user input upon initiating it. 
 - `task_b_c_model_comparison.py`   :  Fits to the Franke Function training dataset of our own network implementation, an analytical OLS regression to a polynomial of degree 7 and a TensorFlow network with the same architecture. Compares all 3 by determining MSE on an unseen test data set. 
-- `task d.py`                           :  **Write here**
-- `task_d_OP.py`                        :  **Write here**
-- `task_e.py`                           :  **Write here**
+- `task_d_OP.py`                        :  Does the analysis to find the optimal parameters for our neural network classifier. It plots all the relevant heatmaps and confusion matrices. It also plots the confusion matrix for the Scikit-learn neural network classifier.
+- `task_e.py`                           :  Does the analysis to find the optimal parameters for our logistic regression implementation, and plots the relevant heatmaps and confusion matrices. It plots the confusion matrices from the Scikit-learn logistic and our neural network implementation without hidden layers.
 - Additional_Plots/Linear_Regression    : Include plots from `task_a.py`, `task b c.py`
 - Additional_Plots/Network_Regression   : Include plots from `task b c.py`
 - Additional_Plots/Classification       : Include plots from `task_d_OP.py` and `task_e.py`
@@ -204,9 +203,66 @@
       The different gradient descent methods that can be used to train the network. They should not be called on their own, but rather by using the 'fit' method and selecting the desired 'method' argument. Their input variables were already explained in 'fit'.
 
                         
-                      
 
-Do similar as above OLP and JH for certain functions
+### LogisticRegression (found in `task_e.py)`
+
+- **Initial Conditions**:
+  - `learning_rate`: The learning rate (eta) that is used in the gradient descent methods.
+  - `t1`: A hyperparameter for the time decay learning rate.
+  - `gamma`: A hyperparameter that can be different than 0 to use momentum gradient descent.
+  - `lam`: A hyperparameter that determines the magnitude of the L2 penalty term
+  - `num_iterations`: The number of iterations for the standard gradient descent method.
+  - `n_epochs`: Number of epochs for the stochastic gradient descent method.
+  - `m`: Number of minibatches for the stochastic gradient descent
+  - `overflow`: Boolean to switch between the two equivalent versions of the sigmoid function to try to combat the overflow errors that might appear
+
+
+  - **Methods**:
+    - `sigmoid1`:
+      - **Inputs**:
+        - `z`: Scalar input for the sigmoid function
+ 
+      Computes the sigmoid function using the first form (following the order in the report) of the input z.
+ 
+      Returns: The value of the sigmoid function of the input z.
+
+
+    - `sigmoid2`:
+      - **Inputs**:
+        - `z`: Scalar input for the sigmoid function
+ 
+      Computes the sigmoid function using the first form (following the order in the report) of the input z.
+ 
+      Returns: The value of the sigmoid function of the input z.
+
+
+    - `GDfit`:
+      - **Inputs**:
+        - `X`: Design Matrix for the classification data
+        - `y`: Target vector for the classification data
+
+      Minimizes the cross entropy cost function by using the standard gradient descent method according to the classification data (in X and y). The internal parameters in the LogisticRegression object will be optimized.
+
+      Returns: void. (The internal parameters in the LogisticRegression object have been optimized.)
+
+
+    - `SGDfit`:
+      - **Inputs**:
+        - `X`: Design Matrix for the classification data
+        - `y`: Target vector for the classification data
+
+      Minimizes the cross entropy cost function by using the stochastic gradient descent method according to the classification data (in X and y). The internal parameters in the LogisticRegression object will be optimized.
+
+      Returns: void. (The internal parameters in the LogisticRegression object have been optimized.)
+
+
+    - `predict`
+      - **Inputs**:
+        - `X`:
+
+      Makes a prediction according to the input data X. If the LogisticRegression object has not been trained with GDfit or SGDfit, the prediction will be done according to the randomly generated list of parameters.
+
+      Returns: the vector y of predicted classifications.
 
 
 
