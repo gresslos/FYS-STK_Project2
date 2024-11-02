@@ -60,7 +60,7 @@ else:
     sys.exit()
     
 # Where to save the figures and data files (week 37 lecture notes)
-PROJECT_ROOT_DIR = "Results"
+PROJECT_ROOT_DIR = "Additional_Plots/Network_Regression"
 
 
 
@@ -73,7 +73,7 @@ dataset = int(input("Which dataset do you wish to use? \n Press 0 for 1D data \n
 
 if dataset == 0:
     # Create a folder to store results for 1D data (if it doesn't exist)
-    DATASET_ID = "Results/1D data"
+    DATASET_ID = "Additional_Plots/Network_Regression/1D data"
     if not os.path.exists(DATASET_ID):
         os.makedirs(DATASET_ID)
     
@@ -85,7 +85,7 @@ if dataset == 0:
     
 elif dataset == 1:
     # Create a folder to store results for Franke's function data (if it doesn't exist)
-    DATASET_ID = "Results/Franke data"
+    DATASET_ID = "Additional_Plots/Network_Regression/Franke data"
     if not os.path.exists(DATASET_ID):
         os.makedirs(DATASET_ID)
     

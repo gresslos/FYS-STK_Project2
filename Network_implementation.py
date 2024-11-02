@@ -1115,14 +1115,15 @@ def NN_model(inputsize, n_layers, n_neuron, optimizer, eta, lamda, activation, i
     elif initializer == 'RANDN':
         initializer = initializers.RandomNormal(mean=0.0, stddev=1, seed=2024)
     elif initializer == 'HE':
-        initializer = initializers.HeNormal(seed = 2024)  # Default initializer
+        initializer = initializers.HeNormal(seed = 2024)  
+        
     # Add an explicit Input layer
     model.add(Input(shape=(inputsize,)))
     
     for i in range(n_layers):
-        model.add(Dense(n_neuron, activation=activation, kernel_regularizer=regularizers.l2(lamda)))
+        model.add(Dense(n_neuron, activation=activation, kernel_regularizer=regularizers.l2(lamda), kernel_initializer = initializer))
     
-    model.add(Dense(1))  # 1 output, no activation for linear regression
+    model.add(Dense(1, kernel_regularizer=regularizers.l2(lamda), kernel_initializer = initializer))  # 1 output, no activation for linear regression
 
     # Choose the optimizer
     if optimizer == "ADAGRAD":
