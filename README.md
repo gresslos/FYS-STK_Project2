@@ -69,10 +69,10 @@
 
    Returns: the scaled testing inputs and targets
 
-  -`rescale`: 
+  - `rescale`: 
     - **Inputs**
       - `y_pred`: predictions made on scaled data, numpy array of shape (n_inputs, 1)
-      
+
    Rescales a prediction according to the trained targets scaler. Should only be called after `scaletrain` has been used on a set of training data. For classification == "Binary", does nothing (the Network class handles scaling of these predictions internally)
 
    Returns: the rescaled predictions
