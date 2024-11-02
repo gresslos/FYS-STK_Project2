@@ -1,0 +1,5 @@
+Best models with each regression method for sigmoid, HE scheme, on the 1D dataset:
+SGD: Best MSE = 1.464875343024134; Best R2 = 0.8070469517465538; Best eta = 0.1; Best lambda = 0.1
+Adagrad: Best MSE = 1.0125043763118924; Best R2 = 0.882512487186702; Best eta = 0.1; Best lambda = 0.0
+RMSprop: Best MSE = 1.011519443228861; Best R2 = 0.8794809452469239; Best eta = 0.001; Best lambda = 0.0
+ADAM: Best MSE = 1.0181652097470373; Best R2 = 0.8779128048834084; Best eta = 0.1; Best lambda = 0.0001

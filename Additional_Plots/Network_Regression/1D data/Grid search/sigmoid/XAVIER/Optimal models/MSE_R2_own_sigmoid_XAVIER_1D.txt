@@ -1,0 +1,5 @@
+Best models with each regression method for sigmoid, XAVIER scheme, on the 1D dataset:
+SGD: Best MSE = 6.016750146069711; Best R2 = -13.421464699063192; Best eta = 0.1; Best lambda = 0.0
+Adagrad: Best MSE = 1.0101582227287134; Best R2 = 0.8782827779799547; Best eta = 1.0; Best lambda = 1e-05
+RMSprop: Best MSE = 1.0008068452845458; Best R2 = 0.8800768720589778; Best eta = 0.1; Best lambda = 0.0001
+ADAM: Best MSE = 1.0012055826738184; Best R2 = 0.8799726653814345; Best eta = 0.1; Best lambda = 0.0001

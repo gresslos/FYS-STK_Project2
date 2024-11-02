@@ -1,0 +1,5 @@
+Best models with each regression method for RELU, XAVIER scheme, on the 1D dataset:
+SGD: Best MSE = 1.033077442749508; Best R2 = 0.8725723590286893; Best eta = 1.0; Best lambda = 0.0
+Adagrad: Best MSE = 1.0023812827291092; Best R2 = 0.8785422362651969; Best eta = 0.001; Best lambda = 1e-05
+RMSprop: Best MSE = 1.0023528883086446; Best R2 = 0.87859100497178; Best eta = 0.0001; Best lambda = 1e-05
+ADAM: Best MSE = 0.990515919496207; Best R2 = 0.8803261279189405; Best eta = 0.01; Best lambda = 0.0

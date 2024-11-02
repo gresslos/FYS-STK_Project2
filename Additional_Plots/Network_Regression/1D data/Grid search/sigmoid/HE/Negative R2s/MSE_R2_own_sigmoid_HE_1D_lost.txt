@@ -1,0 +1,32 @@
+Models with a negative R2 score for sigmoid, HE scheme, on the 1D dataset:
+SGD:
+Learning rate: 1e-05, Lambda: 1e-05, R2 score: -0.08970362596007808
+Learning rate: 1e-05, Lambda: 0.0001, R2 score: -0.08970364335769831
+Learning rate: 1e-05, Lambda: 0.001, R2 score: -0.08970381733399924
+Learning rate: 1e-05, Lambda: 0.01, R2 score: -0.08970555710027606
+Learning rate: 1e-05, Lambda: 0.1, R2 score: -0.08972295508734263
+Learning rate: 1e-05, Lambda: 1.0, R2 score: -0.0898969673818304
+Learning rate: 1e-05, Lambda: 0.0, R2 score: -0.08970362402699816
+Learning rate: 0.0001, Lambda: 1e-05, R2 score: -0.03841691004051917
+Learning rate: 0.0001, Lambda: 0.0001, R2 score: -0.03841707875372369
+Learning rate: 0.0001, Lambda: 0.001, R2 score: -0.03841876588895832
+Learning rate: 0.0001, Lambda: 0.01, R2 score: -0.038435637559420144
+Learning rate: 0.0001, Lambda: 0.1, R2 score: -0.038604386077310426
+Learning rate: 0.0001, Lambda: 1.0, R2 score: -0.040295055850096295
+Learning rate: 0.0001, Lambda: 0.0, R2 score: -0.038416891294614786
+Learning rate: 1.0, Lambda: 1.0, R2 score: -9313261785184.201
+Adagrad:
+Learning rate: 0.01, Lambda: 1.0, R2 score: -1382039374.304484
+Learning rate: 1.0, Lambda: 1.0, R2 score: -2.9692199970931625e+30
+RMSprop:
+Learning rate: 0.001, Lambda: 1.0, R2 score: -1005578084.0432338
+Learning rate: 0.1, Lambda: 1.0, R2 score: -1.323298000918878e+30
+Learning rate: 1.0, Lambda: 0.0001, R2 score: -1.1951379527290237e+31
+Learning rate: 1.0, Lambda: 0.001, R2 score: -210305.09498136872
+Learning rate: 1.0, Lambda: 0.1, R2 score: -1.1995406619309275e+31
+Learning rate: 1.0, Lambda: 0.0, R2 score: -1.062338175132603e+21
+ADAM:
+Learning rate: 0.01, Lambda: 1.0, R2 score: -89.91970758640238
+Learning rate: 0.1, Lambda: 1.0, R2 score: -2.06009254280925e+16
+Learning rate: 1.0, Lambda: 0.1, R2 score: -4.227398334298097e+16
+Learning rate: 1.0, Lambda: 1.0, R2 score: -1.5374051985304975e+25

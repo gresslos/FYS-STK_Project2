@@ -1,0 +1,32 @@
+Models with a negative R2 score for LRELU, HE scheme, on the 1D dataset:
+SGD:
+Learning rate: 0.1, Lambda: 1e-05, R2 score: -4433.845064644403
+Learning rate: 0.1, Lambda: 0.0001, R2 score: -4437.741527946022
+Learning rate: 0.1, Lambda: 0.001, R2 score: -4481.053893712773
+Learning rate: 0.1, Lambda: 0.01, R2 score: -4954.108936641262
+Learning rate: 0.1, Lambda: 0.1, R2 score: -13929.847404554625
+Learning rate: 0.1, Lambda: 1.0, R2 score: -79662.95276340784
+Learning rate: 0.1, Lambda: 0.0, R2 score: -4433.432227794145
+Adagrad:
+Learning rate: 0.01, Lambda: 1.0, R2 score: -0.9689617388723211
+Learning rate: 0.1, Lambda: 1.0, R2 score: -1.3688454791602913
+Learning rate: 1.0, Lambda: 0.1, R2 score: -973459189492.7838
+Learning rate: 1.0, Lambda: 1.0, R2 score: -1.931389069885356e+17
+Learning rate: 1.0, Lambda: 0.0, R2 score: -0.46682359012189556
+RMSprop:
+Learning rate: 0.001, Lambda: 1.0, R2 score: -1.053891782710199
+Learning rate: 0.01, Lambda: 1.0, R2 score: -1.336603457900722
+Learning rate: 0.1, Lambda: 0.0001, R2 score: -1.0656867303946433
+Learning rate: 0.1, Lambda: 0.01, R2 score: -6.86015248193118
+Learning rate: 0.1, Lambda: 0.1, R2 score: -44058565371.82752
+Learning rate: 0.1, Lambda: 1.0, R2 score: -318337954806.5452
+Learning rate: 0.1, Lambda: 0.0, R2 score: -0.014812675969173128
+Learning rate: 1.0, Lambda: 1e-05, R2 score: -0.16428639852138294
+Learning rate: 1.0, Lambda: 0.0001, R2 score: -1.2267698602515882
+Learning rate: 1.0, Lambda: 0.001, R2 score: -0.09009506536301815
+Learning rate: 1.0, Lambda: 0.1, R2 score: -0.025924630991952746
+Learning rate: 1.0, Lambda: 1.0, R2 score: -16385580826.667328
+Learning rate: 1.0, Lambda: 0.0, R2 score: -0.007994757568908106
+ADAM:
+Learning rate: 0.1, Lambda: 1.0, R2 score: -1.3751789869482263
+Learning rate: 1.0, Lambda: 1.0, R2 score: -1.1736238349932235

@@ -1,0 +1,5 @@
+Best models with each regression method for RELU, RANDN scheme, on the 1D dataset:
+SGD: Best MSE = 10.763543989459722; Best R2 = 0.23887283011878557; Best eta = 0.01; Best lambda = 1.0
+Adagrad: Best MSE = 1.0178953253854828; Best R2 = 0.8764238864628969; Best eta = 0.001; Best lambda = 0.1
+RMSprop: Best MSE = 1.018441163366744; Best R2 = 0.8762951051653867; Best eta = 0.0001; Best lambda = 0.1
+ADAM: Best MSE = 0.9916757249168389; Best R2 = 0.8814166538045853; Best eta = 0.1; Best lambda = 0.01

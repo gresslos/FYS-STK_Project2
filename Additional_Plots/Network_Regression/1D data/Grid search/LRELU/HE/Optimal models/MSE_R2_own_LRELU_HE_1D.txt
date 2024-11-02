@@ -1,0 +1,5 @@
+Best models with each regression method for LRELU, HE scheme, on the 1D dataset:
+SGD: Best MSE = 1.206057964931724; Best R2 = 0.848691559549226; Best eta = 0.01; Best lambda = 0.0
+Adagrad: Best MSE = 0.9984716044480411; Best R2 = 0.8833518768942601; Best eta = 0.01; Best lambda = 0.0001
+RMSprop: Best MSE = 0.9970020829225873; Best R2 = 0.8838234249424695; Best eta = 0.001; Best lambda = 0.0001
+ADAM: Best MSE = 0.991547006103631; Best R2 = 0.8791904433772088; Best eta = 0.1; Best lambda = 0.0001

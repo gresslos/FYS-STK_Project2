@@ -1,0 +1,5 @@
+Best models with each regression method for LRELU, HE scheme, on the Franke dataset:
+SGD: Best MSE = 0.01730416516654544; Best R2 = 0.7285751283687463; Best eta = 0.1; Best lambda = 0.01
+Adagrad: Best MSE = 0.0016112596123315412; Best R2 = 0.9796749096510656; Best eta = 0.1; Best lambda = 0.0001
+RMSprop: Best MSE = 0.0014282825615803145; Best R2 = 0.9826580064523545; Best eta = 0.01; Best lambda = 0.0001
+ADAM: Best MSE = 0.000431395938029483; Best R2 = 0.9947534420611024; Best eta = 0.1; Best lambda = 0.0

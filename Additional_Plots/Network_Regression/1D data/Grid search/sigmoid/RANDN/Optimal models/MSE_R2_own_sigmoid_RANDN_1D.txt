@@ -1,0 +1,5 @@
+Best models with each regression method for sigmoid, RANDN scheme, on the 1D dataset:
+SGD: Best MSE = 2.623210699201368; Best R2 = 0.7668156941240497; Best eta = 0.01; Best lambda = 1.0
+Adagrad: Best MSE = 1.008923930000517; Best R2 = 0.8731615736882727; Best eta = 1.0; Best lambda = 0.0001
+RMSprop: Best MSE = 1.0245774502432416; Best R2 = 0.8746401537546431; Best eta = 0.0001; Best lambda = 0.001
+ADAM: Best MSE = 0.997193539672121; Best R2 = 0.8773783572282194; Best eta = 1.0; Best lambda = 0.001
