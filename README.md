@@ -4,7 +4,7 @@
 - `task_a.py`                           :  OLS, GD-methods, and plots of results on data: **3. order polymial**
 - `Network_implementation.py`           :  Contains both the latest version of our Neural Network class and also a function for constructing a TensorFlow equivalent
 - `task b c.py`                         :  Plots for the use of neural networks for regression tasks. The kind of analysis performed by the program is decided by user input upon initiating it. 
-- `task_b_c_model_comparison.py`   :  Fits to the Franke Function training dataset of our own network implementation, an analytical OLS regression to a polynomial of degree 7 and a TensorFlow network with the same architecture. Compares all 3 by determining MSE on an unseen test data set. 
+- `task_b_c_model_comparison.py`   :  Fits to the Franke Function training dataset of our own network implementation, an analytical OLS regression to polynomials of degrees 1 to 10 and a TensorFlow network with the same architecture. Compares all 3 by determining MSE on an unseen test data set. 
 - `task_d_OP.py`                        :  Does the analysis to find the optimal parameters for our neural network classifier. It plots all the relevant heatmaps and confusion matrices. It also plots the confusion matrix for the Scikit-learn neural network classifier.
 - `task_e.py`                           :  Does the analysis to find the optimal parameters for our logistic regression implementation, and plots the relevant heatmaps and confusion matrices. It plots the confusion matrices from the Scikit-learn logistic and our neural network implementation without hidden layers.
 - Additional_Plots/Linear_Regression    : Include plots from `task_a.py`, `task b c.py`
@@ -34,7 +34,7 @@
 
 - **Returns**: The gradient of the input, `func`, which will be another function with the same input variables.
 
-### Design_Matrix_2D (found in `Network_implementation.py`)
+### Design_Matrix_2D (found in `Network_implementation.py` and `task_d_OP.py`)
 - **Inputs**
   - `deg`: The degree of the design matrix one wants to produce, int
   - `X`: An array containing the (x,y) datapoints , numpy array of shape (n_inputs, 2)
@@ -43,10 +43,27 @@
 
 - **Returns**: `Phi`: The design matrix, numpy array of shape (n_inputs, n_features), where the n_features is given by (`deg`+1)(`deg`+2)/2 - 1  
 
+### NN_model (found in `Network_implementation.py`)
+- **Inputs**
+  - `inputsize`: the size of the input layer, usually the number of features in the data, int
+  - `n_layers`: the number of hidden layers, int
+  - `n_neuron`: the number of neurons per hidden layer, int
+  - `optimizer`: the gradien descent method with which to optimize the network, can be either "SGD", "ADAGRAD", "RMSPROP" or "ADAM", string
+  - `eta`: the value of the initial learning rate for gradient descent, float
+  - `lamda`: the value of the L2 regularization parameter, float
+  - `activation`: the activation function for the hidden layers, can be any of the ones supported by keras, string
+  - `initializer`: the initialization scheme for the weights and biases, can be either "XAVIER, "RANDN" or "HE", string
+
+
+  Creates a neural network utilizing tensorflow.keras, though only suitable for regression problems, as the output layer is fixed to 1 neuron with no activation function. 
+  
+  Also immediately equips the network with the ability to be trained using a given gradient descent method. To train a network created with this function, simply run "{network_name}.fit" after having called the function to create "{network_name}".
+  
+- **Returns**: `model`: A neural network that can be trained, tensorflow.keras.sequential model.  
 
 ## Classes
 
-### Scaler (found in `Network_implementation.py`)
+### Scaler (found in `Network_implementation.py` and `task_d_OP.py`)
 - **Initial conditions**:
   - `classification`: Three possible values: False for regression problems, "Binary" for binary classification, "Multiclass" for multiclass classification. If False, creates a StandardScaler() for both inputs and targets. Otherwise, creates a MinMaxScaler() for inputs and a OneHotEncoder() for targets.
 
@@ -55,6 +72,7 @@
     - **Inputs**
       - `X`: training input data, numpy array of shape (n_inputs, n_features)
       - `y`: training target variables, numpy array of shape (n_inputs, 1)
+   
    Trains the scalers defined when the class was initiated on a set of training data, while simultaneously transforming said data. For Binary classification problems, does nothing to the targets.
 
    Returns: the scaled training inputs and targets
@@ -180,8 +198,8 @@
 
   - `accuracy`:  
     - **Inputs**
-      - `X`: input data, numpy array of shape (n_inputs, n_features), 
-      -  `y`: target variables, numpy array of shape (n_inputs, 1), 
+      - `X`: input data, numpy array of shape (n_inputs, n_features)
+      -  `y`: target variables, numpy array of shape (n_inputs, 1) 
       - `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float
                         
       Only usable for classification problems. Feeds the inputs forward through the network and then transforms the outputs into either a string of 0 and 1 values (for classification == "Binary") or  one-hot vectors (for classification == "Multiclass"), before comparing them with the targets. 
