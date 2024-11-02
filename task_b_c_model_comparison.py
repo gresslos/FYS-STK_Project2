@@ -51,8 +51,7 @@ z = z.flatten().reshape(-1,1)
 X_ = np.vstack((x_flat,y_flat)).T
 X = Design_Matrix_2D(1, X_)
 
-X_analytical = Design_Matrix_2D(7, X_) #the analytical approach uses a design matrix
-#of degree 7
+
 
 # Scaling the data for the tensorflow and analytical cases, as it is not
 #automatically handled, like in our network implementation
@@ -62,7 +61,7 @@ scaler2 = Scaler(classification = False) #scaler for analytical data
 
 X_TFscaledtrain, z_TFscaledtrain = scaler1.scaletrain(X, z)
 
-X_scaledtrain, z_scaledtrain = scaler2.scaletrain(X_analytical, z)
+
 
 #testing data
 np.random.seed(2024)
@@ -77,10 +76,10 @@ z_t = z_t.flatten().reshape(-1,1)
 X__t = np.vstack((x_tflat,y_tflat)).T
 X_t = Design_Matrix_2D(1, X__t)
 
-X_tanalytical = Design_Matrix_2D(7, X__t)
 
-X_TFscaledtest, z_TFscaledtest = scaler1.scaletrain(X_t, z)
-X_scaledtest, z_scaledtest = scaler2.scaletest(X_tanalytical, z_t)
+
+X_TFscaledtest, z_TFscaledtest = scaler1.scaletest(X_t, z)
+
 
 #----------------------------- Optimal fit for own implementation --------------------#
 MLP_own = Network([2,100,1],RELU,identity,CostOLS,"XAVIER")
@@ -91,15 +90,30 @@ MSEown = MLP_own.predict(X, z, X_t,z_t)[0]
 
 print(f"Optimal fit for our implementation wielded MSE = {MSEown} for L.R. of 0.1 and L2 reg. of 1e-5")
 #---------------------------- Analytical result -----------------------#
-OLSbeta = np.linalg.pinv(X_scaledtrain.T @ X_scaledtrain) @ X_scaledtrain.T @ z_scaledtrain
+analyticalMSE = MSEown + 1
+i = 0
+while analyticalMSE > MSEown:
+    i += 1
+    
+    X_analytical = Design_Matrix_2D(i, X_) #the analytical approach uses a design matrix
+    #of degree 7
+    X_scaledtrain, z_scaledtrain = scaler2.scaletrain(X_analytical, z)
+    
+    X_tanalytical = Design_Matrix_2D(i, X__t)
+    
+    X_scaledtest, z_scaledtest = scaler2.scaletest(X_tanalytical, z_t)
 
-z_tildeOLS = X_scaledtest @ OLSbeta
+    OLSbeta = np.linalg.pinv(X_scaledtrain.T @ X_scaledtrain) @ X_scaledtrain.T @ z_scaledtrain
 
-z_predOLS = scaler2.rescale(z_tildeOLS)
+    z_tildeOLS = X_scaledtest @ OLSbeta
 
-analyticalMSE = mean_squared_error(z_t, z_predOLS)
+    z_predOLS = scaler2.rescale(z_tildeOLS)
 
-print(f"An OLS analytical linear regression to a degree 7 polynomial wielded an MSE of {analyticalMSE}")
+    analyticalMSE = mean_squared_error(z_t, z_predOLS)
+    
+    print(f"Degree {i}, MSE {analyticalMSE}")
+    
+print(f"An OLS analytical linear regression to a degree {i} polynomial wielded an MSE of {analyticalMSE}")
 #-------------------------- Optimal fit for TF implementation -----------------------#
 eta_vals = np.logspace(-5, 0, 6)
 lmbd_vals = np.logspace(-5, 0, 6)
@@ -114,7 +128,6 @@ for i, eta in enumerate(eta_vals):
         z_tilde = MLP_TF.predict(X_TFscaledtest)
         z_pred = scaler1.rescale(z_tilde)
         MSEsTF[i][j] = mean_squared_error(z_t, z_pred)
-
 #Finding the optimal MSE and corresponding eta and lambda values for TensorFlow
 optimalMSETF, indexoptimalTF = np.min(MSEsTF), np.unravel_index(np.argmin(MSEsTF), MSEsTF.shape)
 optimaletaTF, optimalmbdTF = eta_vals[indexoptimalTF[0]], lmbd_vals[indexoptimalTF[1]]
