@@ -1284,6 +1284,9 @@ if __name__ == "__main__":
     
     from sklearn.neural_network import MLPClassifier
     
+    Scaler = StandardScaler()
+    X = Scaler.fit_transform(X)
+    
     y = y.flatten()
     clf = MLPClassifier(max_iter=10000)
     clf.fit(X, y)

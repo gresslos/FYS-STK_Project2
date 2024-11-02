@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
 from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
 from sklearn.model_selection import  train_test_split 
@@ -168,7 +169,10 @@ if __name__ == "__main__":
     # Sample data
     X, y = load_breast_cancer(return_X_y=True)
     
-    eta_vals = np.logspace(-6, -2, 11)
+    Scaler = StandardScaler()
+    X = Scaler.fit_transform(X)
+    
+    eta_vals = np.logspace(-6, 2, 11)
     eta_vals = np.round(eta_vals, 6)
     lmbd_vals = np.logspace(-6, 1, 11)
     lmbd_vals = np.round(lmbd_vals, 8)
@@ -177,41 +181,33 @@ if __name__ == "__main__":
     for i, eta in enumerate(eta_vals):
         for j, lmb in enumerate(lmbd_vals):
             try:
-                modelGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0, lam=lmb,
-                                           num_iterations=1000, n_epochs=100, 
-                                           m=10, overflow=True
-                                           )
                 modelSGD = LogisticRegression(learning_rate=eta, t1=10, gamma=0, lam=lmb,
                                            num_iterations=1000, n_epochs=100, 
-                                           m=10, overflow=True
+                                           m=30, overflow=True
                                            )
-                modelGD.GDfit(X, y)
                 modelSGD.SGDfit(X, y)
-                predictionsGD = modelGD.predict(X)
                 predictionsSGD = modelSGD.predict(X)
-                accuracy_listGD[i][j] = accuracy_score(y, predictionsGD)
                 accuracy_listSGD[i][j] = accuracy_score(y, predictionsSGD)
             except RuntimeWarning:
                 continue;  
     
-    iGD_max, jGD_max = plot_heatmap(accuracy_listGD.T, lmbd_vals, eta_vals, title='GD (LogReg)', vmin=0.8, saveplot=True, test_lmb=True)
     iSGD_max, jSGD_max = plot_heatmap(accuracy_listSGD.T, lmbd_vals, eta_vals, title='Stochastic GD (LogReg)', vmin=0.8, saveplot=True, test_lmb=True)
 
 
     
-    final_model = LogisticRegression(learning_rate=0.003981, t1=10, gamma=0, lam=1.99526231,
+    final_model = LogisticRegression(learning_rate=100, t1=10, gamma=0, lam=5.01*1e-6,
                                      num_iterations=1000, n_epochs=100, 
                                      m=10, overflow=True
                                      )
     
     final_model.SGDfit(X, y)
     y_predLG = final_model.predict(X)
-    print("Logistic Regression: eta=0.003981, lambda=1.99526231, t1=10, n_epochs=100, m=10")
+    print("Logistic Regression: eta=100, lambda=5.01 * 10^(-6), t1=10, n_epochs=100, m=10")
     print(f"Test set accuracy with Logistic Regression: = {accuracy_score(y, y_predLG):.3f}")
     print(f"log_loss = {log_loss(y, y_predLG):.3f}")
     y = y.reshape(-1, 1)
     y_predLG = y_predLG.reshape(-1, 1)
-    plot_confusion_matrix(y, y_predLG, 'SGD (LogReg)', eta=0.003981, m=10, lmd=1.99526231, logreg_plot=True)
+    plot_confusion_matrix(y, y_predLG, 'SGD (LogReg)', eta=100, m=10, lmd=5.01 * 1e-6, logreg_plot=True)
     print('\n')
 
 
@@ -275,7 +271,6 @@ if __name__ == "__main__":
                 continue;
     
     iNN_max, jNN_max = plot_heatmap(accuracy_listNN.T, lmbd_vals, eta_vals, title='Stochastic GD (NN-LR)', vmin=0.8, saveplot=True, test_lmb=True)
-    
     
     accuracyNN = MLP.fit(X, y, n_batches = 10, n_epochs = 100, eta = 15.848932, t1=10, lmb = 0.000316, delta_mom = 0, method = 'SGD', scale_bool = True, tol = 1e-17)
     y_predNN = accuracyNN[-1]
