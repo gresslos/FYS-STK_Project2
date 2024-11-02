@@ -76,15 +76,19 @@
   - `classification`: Defines whether the network is being used as a regressor, a binary classifier or a multiclass classifier. This is important because the type of task affects some of the functions in our implementation. Is initiated as "None", can be defined by running the "set_classification" method.
 
 - **Methods**:
-  - `feedforward`: Inputs - `X`: input data, numpy array of shape (n_inputs, n_features)
+  - `feedforward`: 
+    - **Inputs** 
+     - `X`: input data, numpy array of shape (n_inputs, n_features)
 
     Feeds a batch of input datapoints, X, through the network by successive application of affine transformations and activation functions at each layer. Stores the activations, z, and outputs, a, eat each layer as elements of self.z_matrices and self.a_matrices
 
     Returns: The outputs of the network
   
-  - `backprop`: Inputs - `X`: input data, inputs, numpy array of shape (n_inputs, n_features)
-                        `y`: target variables, numpy array of shape (n_inputs, 1)
-                        `lmb`: L2 regularization hyperparameter for the weights, float
+  - `backprop`: 
+    - **Inputs**
+     - `X`: input data, inputs, numpy array of shape (n_inputs, n_features)
+     - `y`: target variables, numpy array of shape (n_inputs, 1)
+     - `lmb`: L2 regularization hyperparameter for the weights, float
 
     Performs a backpropagation of the error through the network, starting at the output layer. Relies on the values of self.z_matrices and self.a_matrices, and should thus only be called after an instance of feedforward.
 
@@ -92,19 +96,21 @@
         gradients for the cost function C. Each element of the list corresponds
         to gradients in one of the layers in the network
 
-  - `fit`: Inputs - `X`: input data, numpy array of shape (n_inputs, n_features)
-                   `y`: target variables, numpy array of shape (n_inputs, 1)
-                   `n_batches`: number of batches that the data is split into, int
-                   `n_epochs`: number of training epochs, int
-                   `eta`: initial learning rate for the gradient descent methods, float
-                   `lmb`: L2 regularization parameter for the weights, float
-                   `delta_mom`: momentum parameter (only applicable to GD, SGD and AdaGrad), float
-                   `method`: defines which gradient descent method to use, possible values are "GD", "SGD", "Adagrad", "RMSprop" and "Adam". string
-                   `scale_bool`: default set to True, decides if scaling is used or not, boolean
-                   `tol`: default set to 1e-8, defines how much the score must change between epochs for the training to keep going, float
-                   `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float
-                   `early_stopping`: default set to True, if set to False the early stopping criterium provided by tol is ignored and the training always lasts for the full number of epochs, boolean
-                   `SGD_bool`: (only applicable to AdaGrad), default set to True, decides if stochastic gradient descent is used, boolean
+  - `fit`: 
+   - **Inputs**
+     - `X`: input data, numpy array of shape (n_inputs, n_features)
+     - `y`: target variables, numpy array of shape (n_inputs, 1)
+     -  `n_batches`: number of batches that the data is split into, int
+     - `n_epochs`: number of training epochs, int
+     - `eta`: initial learning rate for the gradient descent methods, float
+     - `lmb`: L2 regularization parameter for the weights, float
+     - `delta_mom`: momentum parameter (only applicable to GD, SGD and AdaGrad), float
+     - `method`: defines which gradient descent method to use, possible values are "GD", "SGD", "Adagrad", "RMSprop" and "Adam". string
+     - `scale_bool`: default set to True, decides if scaling is used or not, boolean
+     - `tol`: default set to 1e-8, defines how much the score must change between epochs for the training to keep going, float
+     - `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float
+     - `early_stopping`: default set to True, if set to False the early stopping criterium provided by tol is ignored and the training always lasts for the full number of epochs, boolean
+     - `SGD_bool`: (only applicable to AdaGrad), default set to True, decides if stochastic gradient descent is used, boolean
 
            
       Trains the parameters of the network on a set of training data, utilizing one of the available gradient descent methods (GD, SGD, AdaGrad, RMSprop, ADAM)
@@ -118,17 +124,21 @@
 
   - `reset_weights`: Resets the RNG seed to self.seed. Then restarts the weights and biases in the network according to the chosen initialization scheme. For reproducibility of results, it is recommended that this method always be called before any other operations are performed on the network.
 
-  - `split_mini_batches`: Inputs - `nbatches`: number of batches that the data is split into, int
-                                   `X`: input data, numpy array of shape (n_inputs, n_features)
-                                   `y`: target variables, numpy array of shape (n_inputs, 1)
+  - `split_mini_batches`: 
+    - **Inputs**
+      - `nbatches`: number of batches that the data is split into, int
+      - `X`: input data, numpy array of shape (n_inputs, n_features)
+      - `y`: target variables, numpy array of shape (n_inputs, 1)
 
       Shuffles the inputs and targets and splits them into minibatches for use in stochastic gradient descent methods. The divisibility between the number of inputs and the number of batches is not an issue: the gradient descent methods within the network handle this problem internally
 
         Returns - minibatches: a list of tuples containing the different batches;
                   shuffled_inputs, shuffled_targets: the shuffled X and y arrays
                   
- - `scaletraining`:  Inputs -`x`: input data, numpy array of shape (n_inputs, n_features)
-                            `y`: target variables, numpy array of shape (n_inputs, 1)      
+ - `scaletraining`: 
+  - **Inputs**
+    - `x`: input data, numpy array of shape (n_inputs, n_features)
+    - `y`: target variables, numpy array of shape (n_inputs, 1)      
                                   
 
       Creates an instance of the Scaler class with the same "classification" value as the network itself. Then trains said scaler on the inputs and targets, while simultaneously scaling them.
@@ -136,12 +146,14 @@
         Returns - x_scaled, y_scaled: the scaled inputs and targets;
                   scaler: the trained Scaler
 
- - `predict`:  Inputs -`X_train`: inputs of the training data
-                       `y_train`: target variables of the training data
-                       `X_test`:  inputs of the testing data 
-                       `y_test`:  target variables of the testing data 
-                       `scale_bool`: default set to True, decides if scaling is used or not, boolean
-                       `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float 
+ - `predict`:  
+  - **Inputs**
+    - `X_train`: inputs of the training data
+    - `y_train`: target variables of the training data
+    - `X_test`:  inputs of the testing data 
+    - `y_test`:  target variables of the testing data 
+    - `scale_bool`: default set to True, decides if scaling is used or not, boolean
+    - `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float 
 
       Performs a prediction after training of the network has been finished. The training data is only necessary in this case for the purposes of scaling the testing data and the predictions. This method should only be called after the network has been trained using 'fit'.
 
@@ -153,9 +165,11 @@
 
          For multiclass classification tasks (classification = "Multiclass"): the final accuracy score; the predictions
 
- - `accuracy`:  Inputs -`X`: input data, numpy array of shape (n_inputs, n_features), 
-                        `y`: target variables, numpy array of shape (n_inputs, 1), 
-                        `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float
+ - `accuracy`:  
+  - **Inputs**
+    - `X`: input data, numpy array of shape (n_inputs, n_features), 
+    -  `y`: target variables, numpy array of shape (n_inputs, 1), 
+    - `threshold`: (only applicable to binary classification), default set to 0.5, sets the value that separates 0 and 1 predictions in binary classification problems, float
                         
       Only usable for classification problems. Feeds the inputs forward through the network and then transforms the outputs into either a string of 0 and 1 values (for classification == "Binary") or  one-hot vectors (for classification == "Multiclass"), before comparing them with the targets. 
       
