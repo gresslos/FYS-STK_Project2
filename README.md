@@ -50,18 +50,32 @@
 ### Scaler (found in `Network_implementation.py`)
 - **Initial conditions**:
   - `classification`: Three possible values: False for regression problems, "Binary" for binary classification, "Multiclass" for multiclass classification. If False, creates a StandardScaler() for both inputs and targets. Otherwise, creates a MinMaxScaler() for inputs and a OneHotEncoder() for targets.
+
 - **Methods**:
-  -`scaletrain`: Trains the scalers defined when the class was initiated on a set of training data, while simultaneously transforming said data. For Binary classification problems, does nothing to the targets.
+  - `scaletrain`:
+    - **Inputs**
+      - `X`: training input data, numpy array of shape (n_inputs, n_features)
+      - `y`: training target variables, numpy array of shape (n_inputs, 1)
+   Trains the scalers defined when the class was initiated on a set of training data, while simultaneously transforming said data. For Binary classification problems, does nothing to the targets.
 
    Returns: the scaled training inputs and targets
 
-  -`scaletest`: Scales a set of testing data according to how the scaler was previously trained. Should only be called after `scaletrain` has been used on a set of training data
+  - `scaletest`: 
+    - **Inputs**
+      - `X`: test input data, numpy array of shape (n_inputs, n_features)
+      - `y`: test target variables, numpy array of shape (n_inputs, 1)
+
+   Scales a set of testing data according to how the scaler was previously trained. Should only be called after `scaletrain` has been used on a set of training data
 
    Returns: the scaled testing inputs and targets
 
-  -`rescale`: Rescales a prediction according to the trained targets scaler. Should only be called after `scaletrain` has been used on a set of training data. For classification == "Binary", does nothing (the Network class handles scaling of these predictions internally)
+  -`rescale`: 
+    - **Inputs**
+      - `y_pred`: predictions made on scaled data, numpy array of shape (n_inputs, 1)
+      
+   Rescales a prediction according to the trained targets scaler. Should only be called after `scaletrain` has been used on a set of training data. For classification == "Binary", does nothing (the Network class handles scaling of these predictions internally)
 
-    Returns: the rescaled predictions
+   Returns: the rescaled predictions
 
 ### Network (found in `Network_implementation.py`)
 - **Initial conditions**:
