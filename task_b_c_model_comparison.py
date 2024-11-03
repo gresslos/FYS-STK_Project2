@@ -26,7 +26,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense           
 from tensorflow.keras import optimizers             
 from tensorflow.keras import regularizers, initializers           
-
+from tensorflow.random import set_seed
 
 import sys
 import os
@@ -124,6 +124,7 @@ for i, eta in enumerate(eta_vals):
     for j, lmbd in enumerate(lmbd_vals):
         print(f"Eta: {eta}, lambda: {lmbd}")
         MLP_TF = NN_model(2,1,100,"ADAM", eta, lmbd, 'relu', "XAVIER")
+        set_seed(4617)
         MLP_TF.fit(X_TFscaledtrain, z_TFscaledtrain, epochs=100, batch_size=int(X.shape[0]/10), verbose=0)
         z_tilde = MLP_TF.predict(X_TFscaledtest)
         z_pred = scaler1.rescale(z_tilde)
